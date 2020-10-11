@@ -43,24 +43,6 @@ impl Player {
     }
 }
 
-struct Map {
-    left: f32,
-    right: f32,
-    top: f32,
-    bottom: f32,
-}
-
-impl Map {
-    fn new() -> Self {
-        Map {
-            left: 0.0,
-            right: 800.0,
-            top: 0.0,
-            bottom: 600.0,
-        }
-    }
-}
-
 struct Polygon {
     verts: Vec<Point2<f32>>,
 }
@@ -73,7 +55,6 @@ impl Polygon {
 
 struct State {
     player: Player,
-    map: Map,
     polygons: Vec<Polygon>,
 }
 
@@ -81,11 +62,16 @@ impl State {
     fn new() -> Self {
         State {
             player: Player::new(),
-            map: Map::new(),
             polygons: vec![
                 Polygon::new(vec![
+                    Point2::new(0.0, 0.0),
+                    Point2::new(800.0, 0.0),
+                    Point2::new(800.0, 600.0),
+                    Point2::new(0.0, 600.0),
+                ]),
+                Polygon::new(vec![
                     Point2::new(250.0, 250.0),
-                    Point2::new(300.0, 250.0),
+                    Point2::new(325.0, 250.0),
                     Point2::new(350.0, 350.0),
                 ]),
                 Polygon::new(vec![
@@ -171,10 +157,40 @@ fn handle_keyboard_input(ctx: &mut Context, player: &mut Player) {
 }
 
 fn handle_collisions(state: &mut State) {
-    state.player.x = (state.player.x + state.player.dx)
-        .max(state.map.left + PLAYER_SIZE)
-        .min(state.map.right - PLAYER_SIZE);
-    state.player.y = (state.player.y + state.player.dy)
-        .max(state.map.top + PLAYER_SIZE)
-        .min(state.map.bottom - PLAYER_SIZE);
+    let mut new_player_x = state.player.x + state.player.dx;
+    let mut new_player_y = state.player.y + state.player.dy;
+
+    for polygon in &state.polygons {
+        let n = polygon.verts.len();
+        for i in 0..n {
+            let new_center = Point2::new(new_player_x, new_player_y);
+            
+            let a = polygon.verts[i];
+            let b = polygon.verts[(i + 1) % n];
+            
+            let closest_point = get_closest_point(a, b, new_center);
+
+            let dist = nalgebra::distance(&closest_point, &new_center);
+            if dist < PLAYER_SIZE {
+                let direction = new_center - closest_point;
+                let unit_direction = nalgebra::Unit::new_normalize(direction).into_inner();
+                new_player_x += unit_direction.x * (PLAYER_SIZE - dist);
+                new_player_y += unit_direction.y * (PLAYER_SIZE - dist);
+            }
+        }
+    }
+
+    state.player.x = new_player_x;
+    state.player.y = new_player_y;
+}
+
+fn get_closest_point(a: Point2<f32>, b: Point2<f32>, p: Point2<f32>) -> Point2<f32> {
+    let ap = p - a;
+    let ab = b - a;
+
+    let ap_ab = ap.x * ab.x + ap.y * ab.y;
+    let ab2 = ab.x * ab.x + ab.y * ab.y;
+    let t = (ap_ab / ab2).max(0.0).min(1.0);
+
+    a + ab * t
 }
