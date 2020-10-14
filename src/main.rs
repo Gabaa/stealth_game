@@ -2,7 +2,6 @@ use ggez::*;
 use nalgebra::Point2;
 
 const MOVE_SPEED: f32 = 2.0;
-const PLAYER_SIZE: f32 = 25.0;
 
 fn main() {
     let mut state = State::new();
@@ -28,6 +27,7 @@ fn main() {
 struct Player {
     x: f32,
     y: f32,
+    radius: f32,
     dx: f32,
     dy: f32,
 }
@@ -37,6 +37,7 @@ impl Player {
         Player {
             x: 30.0,
             y: 40.0,
+            radius: 25.0,
             dx: 0.0,
             dy: 0.0,
         }
@@ -155,7 +156,7 @@ impl event::EventHandler for State {
             ctx,
             graphics::DrawMode::fill(),
             [self.player.x, self.player.y],
-            PLAYER_SIZE,
+            self.player.radius,
             0.5,
             graphics::WHITE,
         )?;
@@ -201,44 +202,55 @@ fn handle_keyboard_input(ctx: &mut Context, player: &mut Player) {
 }
 
 fn handle_collisions(state: &mut State) {
-    let mut new_player_x = state.player.x + state.player.dx;
-    let mut new_player_y = state.player.y + state.player.dy;
+    let (dx, dy) = handle_obstacle_collisions(state);
+
+    state.player.x += dx;
+    state.player.y += dy;
+
+    handle_end_area_intersection(state);
+}
+
+fn handle_obstacle_collisions(state: &mut State) -> (f32, f32) {
+    let Player { x, y, .. } = state.player;
+    let mut dx = state.player.dx;
+    let mut dy = state.player.dy;
 
     for obstacle in &state.game_map.obstacles {
         let n = obstacle.verts.len();
         for i in 0..n {
-            let new_center = Point2::new(new_player_x, new_player_y);
             let a = obstacle.verts[i];
             let b = obstacle.verts[(i + 1) % n];
-            let closest_point = get_closest_point(a, b, new_center);
+            let center = Point2::new(x + dx, y + dy);
+            let closest_point = get_closest_point(a, b, center);
 
-            let dist = nalgebra::distance(&closest_point, &new_center);
-            if dist < PLAYER_SIZE {
-                let direction = new_center - closest_point;
+            let dist = nalgebra::distance(&closest_point, &center);
+            if dist < state.player.radius {
+                let direction = center - closest_point;
                 let unit_direction = nalgebra::Unit::new_normalize(direction).into_inner();
-                new_player_x += unit_direction.x * (PLAYER_SIZE - dist);
-                new_player_y += unit_direction.y * (PLAYER_SIZE - dist);
+                dx += unit_direction.x * (state.player.radius - dist) * 0.5;
+                dy += unit_direction.y * (state.player.radius - dist) * 0.5;
             }
         }
     }
 
-    // Check if player intersects end area
+    (dx, dy)
+}
+
+fn handle_end_area_intersection(state: &mut State) {
     let end_area = &state.game_map.end_area;
+    let position = Point2::new(state.player.x, state.player.y);
+
     let n = end_area.verts.len();
     for i in 0..n {
-        let new_center = Point2::new(new_player_x, new_player_y);
         let a = end_area.verts[i];
         let b = end_area.verts[(i + 1) % n];
-        let closest_point = get_closest_point(a, b, new_center);
+        let closest_point = get_closest_point(a, b, position);
 
-        let dist = nalgebra::distance(&closest_point, &new_center);
-        if dist < PLAYER_SIZE {
+        let dist = nalgebra::distance(&closest_point, &position);
+        if dist < state.player.radius {
             state.player_won = true;
         }
     }
-
-    state.player.x = new_player_x;
-    state.player.y = new_player_y;
 }
 
 fn get_closest_point(a: Point2<f32>, b: Point2<f32>, p: Point2<f32>) -> Point2<f32> {
