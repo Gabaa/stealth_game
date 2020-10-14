@@ -53,16 +53,15 @@ impl Polygon {
     }
 }
 
-struct State {
-    player: Player,
-    polygons: Vec<Polygon>,
+struct GameMap {
+    obstacles: Vec<Polygon>,
+    end_area: Polygon,
 }
 
-impl State {
+impl GameMap {
     fn new() -> Self {
-        State {
-            player: Player::new(),
-            polygons: vec![
+        GameMap {
+            obstacles: vec![
                 Polygon::new(vec![
                     Point2::new(0.0, 0.0),
                     Point2::new(800.0, 0.0),
@@ -84,6 +83,28 @@ impl State {
                     Point2::new(403.0, 162.0),
                 ]),
             ],
+            end_area: Polygon::new(vec![
+                Point2::new(600.0, 400.0),
+                Point2::new(800.0, 400.0),
+                Point2::new(800.0, 600.0),
+                Point2::new(600.0, 600.0),
+            ]),
+        }
+    }
+}
+
+struct State {
+    player: Player,
+    game_map: GameMap,
+    player_won: bool,
+}
+
+impl State {
+    fn new() -> Self {
+        State {
+            player: Player::new(),
+            game_map: GameMap::new(),
+            player_won: false,
         }
     }
 }
@@ -101,18 +122,8 @@ impl event::EventHandler for State {
         graphics::clear(ctx, graphics::BLACK);
 
         // TODO: don't make a new mesh every draw call, just update an existing one
-        let mesh = graphics::Mesh::new_circle(
-            ctx,
-            graphics::DrawMode::fill(),
-            [self.player.x, self.player.y],
-            PLAYER_SIZE,
-            0.5,
-            graphics::WHITE,
-        )?;
-
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
-
-        for polygon in &self.polygons {
+        // Obstacles
+        for polygon in &self.game_map.obstacles {
             let mesh = graphics::Mesh::new_polygon(
                 ctx,
                 graphics::DrawMode::stroke(3.0),
@@ -123,11 +134,44 @@ impl event::EventHandler for State {
             graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
         }
 
+        let green = graphics::Color {
+            r: 0.0,
+            g: 1.0,
+            b: 0.0,
+            a: 1.0,
+        };
+
+        // End area
+        let mesh = graphics::Mesh::new_polygon(
+            ctx,
+            graphics::DrawMode::fill(),
+            &self.game_map.end_area.verts,
+            green,
+        )?;
+        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+
+        // Player
+        let mesh = graphics::Mesh::new_circle(
+            ctx,
+            graphics::DrawMode::fill(),
+            [self.player.x, self.player.y],
+            PLAYER_SIZE,
+            0.5,
+            graphics::WHITE,
+        )?;
+        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+
+        // Present on screen
         graphics::present(ctx)
     }
 }
 
 fn tick(ctx: &mut Context, state: &mut State) {
+    if state.player_won {
+        println!("You won!");
+        event::quit(ctx);
+    }
+
     handle_keyboard_input(ctx, &mut state.player);
 
     handle_collisions(state);
@@ -160,14 +204,12 @@ fn handle_collisions(state: &mut State) {
     let mut new_player_x = state.player.x + state.player.dx;
     let mut new_player_y = state.player.y + state.player.dy;
 
-    for polygon in &state.polygons {
-        let n = polygon.verts.len();
+    for obstacle in &state.game_map.obstacles {
+        let n = obstacle.verts.len();
         for i in 0..n {
             let new_center = Point2::new(new_player_x, new_player_y);
-            
-            let a = polygon.verts[i];
-            let b = polygon.verts[(i + 1) % n];
-            
+            let a = obstacle.verts[i];
+            let b = obstacle.verts[(i + 1) % n];
             let closest_point = get_closest_point(a, b, new_center);
 
             let dist = nalgebra::distance(&closest_point, &new_center);
@@ -177,6 +219,21 @@ fn handle_collisions(state: &mut State) {
                 new_player_x += unit_direction.x * (PLAYER_SIZE - dist);
                 new_player_y += unit_direction.y * (PLAYER_SIZE - dist);
             }
+        }
+    }
+
+    // Check if player intersects end area
+    let end_area = &state.game_map.end_area;
+    let n = end_area.verts.len();
+    for i in 0..n {
+        let new_center = Point2::new(new_player_x, new_player_y);
+        let a = end_area.verts[i];
+        let b = end_area.verts[(i + 1) % n];
+        let closest_point = get_closest_point(a, b, new_center);
+
+        let dist = nalgebra::distance(&closest_point, &new_center);
+        if dist < PLAYER_SIZE {
+            state.player_won = true;
         }
     }
 
