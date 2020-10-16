@@ -1,7 +1,12 @@
-use ggez::*;
-use nalgebra::Point2;
+mod collision_handling;
+mod input_handling;
+mod player;
 
-const MOVE_SPEED: f32 = 2.0;
+use ggez::*;
+use input_handling::handle_keyboard_input;
+use nalgebra::Point2;
+use player::Player;
+use collision_handling::handle_collisions;
 
 fn main() {
     let mut state = State::new();
@@ -21,26 +26,6 @@ fn main() {
     match event::run(ctx, event_loop, &mut state) {
         Ok(_) => println!("Exited cleanly."),
         Err(e) => println!("Error occured: {}", e),
-    }
-}
-
-struct Player {
-    x: f32,
-    y: f32,
-    radius: f32,
-    dx: f32,
-    dy: f32,
-}
-
-impl Player {
-    fn new() -> Self {
-        Player {
-            x: 30.0,
-            y: 40.0,
-            radius: 25.0,
-            dx: 0.0,
-            dy: 0.0,
-        }
     }
 }
 
@@ -95,7 +80,7 @@ impl GameMap {
 }
 
 struct State {
-    player: Player,
+    player: player::Player,
     game_map: GameMap,
     player_won: bool,
 }
@@ -174,92 +159,5 @@ fn tick(ctx: &mut Context, state: &mut State) {
     }
 
     handle_keyboard_input(ctx, &mut state.player);
-
     handle_collisions(state);
-}
-
-fn handle_keyboard_input(ctx: &mut Context, player: &mut Player) {
-    use ggez::input::keyboard::*;
-
-    player.dx = 0.0;
-    player.dy = 0.0;
-
-    if is_key_pressed(ctx, KeyCode::W) {
-        player.dy -= MOVE_SPEED;
-    }
-
-    if is_key_pressed(ctx, KeyCode::S) {
-        player.dy += MOVE_SPEED;
-    }
-
-    if is_key_pressed(ctx, KeyCode::A) {
-        player.dx -= MOVE_SPEED;
-    }
-
-    if is_key_pressed(ctx, KeyCode::D) {
-        player.dx += MOVE_SPEED;
-    }
-}
-
-fn handle_collisions(state: &mut State) {
-    let (dx, dy) = handle_obstacle_collisions(state);
-
-    state.player.x += dx;
-    state.player.y += dy;
-
-    handle_end_area_intersection(state);
-}
-
-fn handle_obstacle_collisions(state: &mut State) -> (f32, f32) {
-    let Player { x, y, .. } = state.player;
-    let mut dx = state.player.dx;
-    let mut dy = state.player.dy;
-
-    for obstacle in &state.game_map.obstacles {
-        let n = obstacle.verts.len();
-        for i in 0..n {
-            let a = obstacle.verts[i];
-            let b = obstacle.verts[(i + 1) % n];
-            let center = Point2::new(x + dx, y + dy);
-            let closest_point = get_closest_point(a, b, center);
-
-            let dist = nalgebra::distance(&closest_point, &center);
-            if dist < state.player.radius {
-                let direction = center - closest_point;
-                let unit_direction = nalgebra::Unit::new_normalize(direction).into_inner();
-                dx += unit_direction.x * (state.player.radius - dist) * 0.5;
-                dy += unit_direction.y * (state.player.radius - dist) * 0.5;
-            }
-        }
-    }
-
-    (dx, dy)
-}
-
-fn handle_end_area_intersection(state: &mut State) {
-    let end_area = &state.game_map.end_area;
-    let position = Point2::new(state.player.x, state.player.y);
-
-    let n = end_area.verts.len();
-    for i in 0..n {
-        let a = end_area.verts[i];
-        let b = end_area.verts[(i + 1) % n];
-        let closest_point = get_closest_point(a, b, position);
-
-        let dist = nalgebra::distance(&closest_point, &position);
-        if dist < state.player.radius {
-            state.player_won = true;
-        }
-    }
-}
-
-fn get_closest_point(a: Point2<f32>, b: Point2<f32>, p: Point2<f32>) -> Point2<f32> {
-    let ap = p - a;
-    let ab = b - a;
-
-    let ap_ab = ap.x * ab.x + ap.y * ab.y;
-    let ab2 = ab.x * ab.x + ab.y * ab.y;
-    let t = (ap_ab / ab2).max(0.0).min(1.0);
-
-    a + ab * t
 }
