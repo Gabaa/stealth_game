@@ -5,7 +5,6 @@ use crate::State;
 pub fn handle_collisions(state: &mut State) {
     state.player.apply_movement();
     handle_obstacle_collisions(state);
-
     handle_end_area_intersection(state);
 }
 

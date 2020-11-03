@@ -19,6 +19,10 @@ impl Player {
         }
     }
 
+    pub fn get_previous_position(&mut self) -> (f32, f32) {
+        (self.x - self.dx, self.y - self.dy)
+    }
+
     pub fn set_speed(&mut self, move_speed: f32) {
         self.move_speed = move_speed;
     }
