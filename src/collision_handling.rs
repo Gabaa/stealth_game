@@ -37,8 +37,7 @@ fn move_out_of_obstacle(obstacle: &Polygon, player: &Player, next_pos: &mut Poin
         Some(closest_point) => {
             let dist = distance(&closest_point, &next_pos);
             if dist < player.radius {
-                let direction =
-                    Vector2::new(next_pos.x - closest_point.x, next_pos.y - closest_point.y);
+                let direction = *next_pos - closest_point;
                 let unit_direction = direction.normalize();
                 let dx = unit_direction.x * (player.radius - dist);
                 let dy = unit_direction.y * (player.radius - dist);
