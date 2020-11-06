@@ -1,16 +1,14 @@
-use crate::player::Player;
+use crate::nalgebra::Vector2;
 use ggez::input::keyboard::{is_key_pressed, KeyCode};
 use ggez::Context;
 
-pub fn handle_keyboard_input(ctx: &mut Context, player: &mut Player) {
-    handle_sprint_key(ctx, player);
-    let (dx, dy) = handle_direction_keys(ctx);
-    player.set_direction(dx, dy)
+pub fn handle_keyboard_input(ctx: &mut Context) -> Vector2<f32> {
+    handle_movement_keys(ctx)
 }
 
-fn handle_direction_keys(ctx: &Context) -> (f32, f32) {
-    let dx = 0.0;
-    let dy = 0.0;
+fn handle_movement_keys(ctx: &Context) -> Vector2<f32> {
+    let mut dx = 0.0;
+    let mut dy = 0.0;
 
     if is_key_pressed(ctx, KeyCode::W) {
         dy -= 1.0;
@@ -25,13 +23,15 @@ fn handle_direction_keys(ctx: &Context) -> (f32, f32) {
         dx += 1.0;
     }
 
-    (dx, dy)
+    let direction = Vector2::new(dx, dy);
+    if direction.x == 0.0 && direction.y == 0.0 {
+        return direction;
+    }
+    let normalized_direction = direction.normalize();
+    let move_speed = if is_sprinting(ctx) { 4.0 } else { 2.0 };
+    normalized_direction * move_speed
 }
 
-fn handle_sprint_key(ctx: &Context, player: &mut Player) {
-    if is_key_pressed(ctx, KeyCode::LShift) {
-        player.set_speed(4.0);
-    } else {
-        player.set_speed(2.0);
-    }
+fn is_sprinting(ctx: &Context) -> bool {
+    is_key_pressed(ctx, KeyCode::LShift)
 }

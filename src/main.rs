@@ -1,12 +1,14 @@
 mod collision_handling;
+mod game_map;
 mod input_handling;
 mod player;
+mod polygon;
 
+use collision_handling::apply_physics_movement;
+use game_map::GameMap;
 use ggez::*;
 use input_handling::handle_keyboard_input;
-use nalgebra::Point2;
 use player::Player;
-use collision_handling::handle_collisions;
 
 fn main() {
     let mut state = State::new();
@@ -29,58 +31,7 @@ fn main() {
     }
 }
 
-struct Polygon {
-    verts: Vec<Point2<f32>>,
-}
-
-impl Polygon {
-    fn new(verts: Vec<Point2<f32>>) -> Self {
-        Polygon { verts }
-    }
-}
-
-struct GameMap {
-    obstacles: Vec<Polygon>,
-    end_area: Polygon,
-}
-
-impl GameMap {
-    fn new() -> Self {
-        let obstacles = vec![
-            Polygon::new(vec![
-                Point2::new(0.0, 0.0),
-                Point2::new(800.0, 0.0),
-                Point2::new(800.0, 600.0),
-                Point2::new(0.0, 600.0),
-            ]),
-            Polygon::new(vec![
-                Point2::new(250.0, 250.0),
-                Point2::new(325.0, 250.0),
-                Point2::new(350.0, 350.0),
-            ]),
-            Polygon::new(vec![
-                Point2::new(477.0, 142.0),
-                Point2::new(541.0, 189.0),
-                Point2::new(449.0, 328.0),
-                Point2::new(374.0, 260.0),
-                Point2::new(349.0, 211.0),
-                Point2::new(428.0, 221.0),
-                Point2::new(403.0, 162.0),
-            ]),
-        ];
-
-        let end_area = Polygon::new(vec![
-            Point2::new(600.0, 400.0),
-            Point2::new(800.0, 400.0),
-            Point2::new(800.0, 600.0),
-            Point2::new(600.0, 600.0),
-        ]);
-
-        GameMap {obstacles, end_area}
-    }
-}
-
-struct State {
+pub struct State {
     player: player::Player,
     game_map: GameMap,
     player_won: bool,
@@ -138,10 +89,11 @@ impl event::EventHandler for State {
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
 
         // Player
+        let player_position = self.player.get_position();
         let mesh = graphics::Mesh::new_circle(
             ctx,
             graphics::DrawMode::fill(),
-            [self.player.x, self.player.y],
+            [player_position.x, player_position.y],
             self.player.radius,
             0.5,
             graphics::WHITE,
@@ -159,6 +111,6 @@ fn tick(ctx: &mut Context, state: &mut State) {
         event::quit(ctx);
     }
 
-    handle_keyboard_input(ctx, &mut state.player);
-    handle_collisions(state);
+    let delta = handle_keyboard_input(ctx);
+    apply_physics_movement(state, delta);
 }
