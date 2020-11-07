@@ -15,20 +15,16 @@ fn handle_obstacle_collisions(state: &mut State, next_pos: &mut Point2<f32>) {
     let mut iterations = 0;
 
     loop {
-        if iterations == 100 {
-            break;
-        }
+        iterations += 1;
 
         let mut changed = false;
         for obstacle in &state.game_map.obstacles {
             changed |= move_out_of_obstacle(obstacle, &state.player, next_pos);
         }
 
-        if !changed {
+        if iterations == 100 || !changed {
             break;
         }
-
-        iterations += 1;
     }
 }
 
