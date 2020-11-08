@@ -37,7 +37,7 @@ impl FieldOfView {
 
         new_verts.sort_by(|a, b| {
             let r = Vector2::new(1.0, 0.0);
-            let a_angle = r.angle(&a.coords);
+            let a_angle = r.angle(&a.coords); // TODO: Ikke mindst angle, men "absolut"
             let b_angle = r.angle(&b.coords);
             a_angle.partial_cmp(&b_angle).unwrap()
         });
@@ -65,7 +65,7 @@ fn raycast(pos: Point2<f32>, dir: Vector2<f32>, polygons: &Vec<Polygon>) -> Opti
             // T1 = (s_px+s_dx*T2-r_px)/r_dx
             let t1 = (start.x + edge_dir.x * t2 - pos.x) / dir.x;
 
-            if 0.0 < t1 && 0.0 < t2 && t2 < 1.0 {
+            if 0.0 < t1 && 0.0 <= t2 && t2 <= 1.0 {
                 let point = Point2::new(pos.x + dir.x * t1, pos.y + dir.y * t1);
                 let new_dist = distance_squared(&point, &pos);
                 if new_dist < closest_point_dist {
