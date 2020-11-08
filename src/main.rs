@@ -65,13 +65,9 @@ impl event::EventHandler for State {
         graphics::clear(ctx, graphics::BLACK);
 
         // TODO: These should re-use the meshes instead of remaking each time
-        println!("FOV");
         draw_fov(ctx, &self.fov)?;
-        println!("OBSTACLES");
         draw_obstacles(ctx, &self.game_map)?;
-        println!("END");
         draw_end_area(ctx, &self.game_map)?;
-        println!("PLAYER");
         draw_player(ctx, &self.player)?;
 
         // Present on screen
@@ -91,20 +87,36 @@ fn tick(ctx: &mut Context, state: &mut State) {
 }
 
 fn draw_fov(ctx: &mut Context, fov: &FieldOfView) -> GameResult<()> {
-    let area = fov.get_area();
+    println!("FOV Draw: vis area verts: {}", fov.visible_area.verts.len());
 
     let mesh = graphics::Mesh::new_polygon(
         ctx,
         graphics::DrawMode::fill(),
-        &area.verts,
+        &fov.visible_area.verts,
         colors::VISIBLE_AREA,
     )?;
 
-    graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+    graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+
+    for vert in &fov.visible_area.verts {
+        let mesh = graphics::Mesh::new_circle(
+            ctx,
+            graphics::DrawMode::fill(),
+            [vert.x, vert.y],
+            10.0,
+            0.5,
+            graphics::WHITE,
+        )?;
+
+        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+    }
+
+    Ok(())
 }
 
 fn draw_obstacles(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
     for polygon in &game_map.obstacles {
+        println!("Obstacle: verts: {}", polygon.verts.len());
         let mesh = graphics::Mesh::new_polygon(
             ctx,
             graphics::DrawMode::stroke(3.0),
@@ -119,6 +131,7 @@ fn draw_obstacles(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
 }
 
 fn draw_end_area(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
+    println!("end area: verts: {}", game_map.end_area.verts.len());
     let mesh = graphics::Mesh::new_polygon(
         ctx,
         graphics::DrawMode::fill(),

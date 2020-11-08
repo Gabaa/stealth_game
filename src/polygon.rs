@@ -6,6 +6,7 @@ pub struct Polygon {
 
 impl Polygon {
     pub fn new(verts: Vec<Point2<f32>>) -> Self {
+        // assert!(verts.len() >= 3);
         Polygon { verts }
     }
 
