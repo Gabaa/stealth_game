@@ -87,8 +87,6 @@ fn tick(ctx: &mut Context, state: &mut State) {
 }
 
 fn draw_fov(ctx: &mut Context, fov: &FieldOfView) -> GameResult<()> {
-    println!("FOV Draw: vis area verts: {}", fov.visible_area.verts.len());
-
     let mesh = graphics::Mesh::new_polygon(
         ctx,
         graphics::DrawMode::fill(),
@@ -96,32 +94,16 @@ fn draw_fov(ctx: &mut Context, fov: &FieldOfView) -> GameResult<()> {
         colors::VISIBLE_AREA,
     )?;
 
-    graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
-
-    for vert in &fov.visible_area.verts {
-        let mesh = graphics::Mesh::new_circle(
-            ctx,
-            graphics::DrawMode::fill(),
-            [vert.x, vert.y],
-            10.0,
-            0.5,
-            graphics::WHITE,
-        )?;
-
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
-    }
-
-    Ok(())
+    graphics::draw(ctx, &mesh, graphics::DrawParam::default())
 }
 
 fn draw_obstacles(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
     for polygon in &game_map.obstacles {
-        println!("Obstacle: verts: {}", polygon.verts.len());
         let mesh = graphics::Mesh::new_polygon(
             ctx,
             graphics::DrawMode::stroke(3.0),
             &polygon.verts,
-            graphics::WHITE,
+            colors::OBSTACLE,
         )?;
 
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
@@ -131,7 +113,6 @@ fn draw_obstacles(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
 }
 
 fn draw_end_area(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
-    println!("end area: verts: {}", game_map.end_area.verts.len());
     let mesh = graphics::Mesh::new_polygon(
         ctx,
         graphics::DrawMode::fill(),

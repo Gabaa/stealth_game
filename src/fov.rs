@@ -1,5 +1,5 @@
 use crate::game_map::GameMap;
-use crate::nalgebra::{distance_squared, Point2, Vector2};
+use crate::nalgebra::{distance_squared, Matrix2, Point2, Vector2};
 use crate::player::Player;
 use crate::polygon::Polygon;
 
@@ -26,7 +26,22 @@ impl FieldOfView {
         for obstacle in &game_map.obstacles {
             for vert in &obstacle.verts {
                 let direction = vert - pos;
+
+                let cw_rot_matrix = get_rotation_matrix(0.0001);
+                let ccw_rot_matrix = get_rotation_matrix(-0.0001);
                 match raycast(pos, direction, &game_map.obstacles) {
+                    Some(point) => {
+                        new_verts.push(point);
+                    }
+                    None => {}
+                };
+                match raycast(pos, cw_rot_matrix * direction, &game_map.obstacles) {
+                    Some(point) => {
+                        new_verts.push(point);
+                    }
+                    None => {}
+                };
+                match raycast(pos, ccw_rot_matrix * direction, &game_map.obstacles) {
                     Some(point) => {
                         new_verts.push(point);
                     }
@@ -36,9 +51,8 @@ impl FieldOfView {
         }
 
         new_verts.sort_by(|a, b| {
-            let r = Vector2::new(1.0, 0.0);
-            let a_angle = r.angle(&a.coords); // TODO: Ikke mindst angle, men "absolut"
-            let b_angle = r.angle(&b.coords);
+            let a_angle = angle_to_i(&(a - pos));
+            let b_angle = angle_to_i(&(b - pos));
             a_angle.partial_cmp(&b_angle).unwrap()
         });
 
@@ -46,8 +60,20 @@ impl FieldOfView {
     }
 }
 
+fn get_rotation_matrix(theta: f32) -> Matrix2<f32> {
+    Matrix2::new(theta.cos(), -theta.sin(), theta.sin(), theta.cos())
+}
+
+fn angle_to_i(v: &Vector2<f32>) -> f32 {
+    let i = Vector2::new(1.0, 0.0);
+
+    let a_dot = i.dot(v);
+    let a_det = i.x * v.y - i.y * v.x;
+
+    a_dot.atan2(a_det)
+}
+
 fn raycast(pos: Point2<f32>, dir: Vector2<f32>, polygons: &Vec<Polygon>) -> Option<Point2<f32>> {
-    let dir = dir.normalize();
     let mut closest_point_dist = std::f32::MAX;
     let mut closest_point = None;
     for polygon in polygons {
