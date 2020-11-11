@@ -27,32 +27,23 @@ impl FieldOfView {
             for vert in &obstacle.verts {
                 let direction = vert - pos;
 
-                let cw_rot_matrix = get_rotation_matrix(0.0001);
-                let ccw_rot_matrix = get_rotation_matrix(-0.0001);
-                match raycast(pos, direction, &game_map.obstacles) {
-                    Some(point) => {
-                        new_verts.push(point);
-                    }
-                    None => {}
+                let cw_rot_matrix = get_rotation_matrix(0.001);
+                let ccw_rot_matrix = get_rotation_matrix(-0.001);
+                if let Some(point) = raycast(pos, direction, &game_map.obstacles) {
+                    new_verts.push(point);
                 };
-                match raycast(pos, cw_rot_matrix * direction, &game_map.obstacles) {
-                    Some(point) => {
-                        new_verts.push(point);
-                    }
-                    None => {}
+                if let Some(point) = raycast(pos, cw_rot_matrix * direction, &game_map.obstacles) {
+                    new_verts.push(point);
                 };
-                match raycast(pos, ccw_rot_matrix * direction, &game_map.obstacles) {
-                    Some(point) => {
-                        new_verts.push(point);
-                    }
-                    None => {}
+                if let Some(point) = raycast(pos, ccw_rot_matrix * direction, &game_map.obstacles) {
+                    new_verts.push(point);
                 };
             }
         }
 
         new_verts.sort_by(|a, b| {
-            let a_angle = angle_to_i(&(a - pos));
-            let b_angle = angle_to_i(&(b - pos));
+            let a_angle = angle_to_i(a - pos);
+            let b_angle = angle_to_i(b - pos);
             a_angle.partial_cmp(&b_angle).unwrap()
         });
 
@@ -64,16 +55,16 @@ fn get_rotation_matrix(theta: f32) -> Matrix2<f32> {
     Matrix2::new(theta.cos(), -theta.sin(), theta.sin(), theta.cos())
 }
 
-fn angle_to_i(v: &Vector2<f32>) -> f32 {
+fn angle_to_i(v: Vector2<f32>) -> f32 {
     let i = Vector2::new(1.0, 0.0);
 
-    let a_dot = i.dot(v);
+    let a_dot = i.dot(&v);
     let a_det = i.x * v.y - i.y * v.x;
 
     a_dot.atan2(a_det)
 }
 
-fn raycast(pos: Point2<f32>, dir: Vector2<f32>, polygons: &Vec<Polygon>) -> Option<Point2<f32>> {
+fn raycast(pos: Point2<f32>, dir: Vector2<f32>, polygons: &[Polygon]) -> Option<Point2<f32>> {
     let mut closest_point_dist = std::f32::MAX;
     let mut closest_point = None;
     for polygon in polygons {
