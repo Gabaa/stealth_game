@@ -1,6 +1,5 @@
 use crate::game_map::GameMap;
 use crate::nalgebra::{distance_squared, Matrix2, Point2, Vector2};
-use crate::player::Player;
 use crate::polygon::Polygon;
 
 pub struct FieldOfView {
@@ -19,31 +18,34 @@ impl FieldOfView {
         }
     }
 
-    pub fn update(&mut self, player: &Player, game_map: &GameMap) {
+    pub fn update(&mut self, player_pos: Point2<f32>, game_map: &GameMap) {
         let mut new_verts: Vec<Point2<f32>> = vec![];
-        let pos = player.get_position();
 
         for obstacle in &game_map.obstacles {
             for vert in &obstacle.verts {
-                let direction = vert - pos;
+                let direction = vert - player_pos;
 
                 let cw_rot_matrix = get_rotation_matrix(0.001);
                 let ccw_rot_matrix = get_rotation_matrix(-0.001);
-                if let Some(point) = raycast(pos, direction, &game_map.obstacles) {
+                if let Some(point) = raycast(player_pos, direction, &game_map.obstacles) {
                     new_verts.push(point);
                 };
-                if let Some(point) = raycast(pos, cw_rot_matrix * direction, &game_map.obstacles) {
+                if let Some(point) =
+                    raycast(player_pos, cw_rot_matrix * direction, &game_map.obstacles)
+                {
                     new_verts.push(point);
                 };
-                if let Some(point) = raycast(pos, ccw_rot_matrix * direction, &game_map.obstacles) {
+                if let Some(point) =
+                    raycast(player_pos, ccw_rot_matrix * direction, &game_map.obstacles)
+                {
                     new_verts.push(point);
                 };
             }
         }
 
         new_verts.sort_by(|a, b| {
-            let a_angle = angle_to_i(a - pos);
-            let b_angle = angle_to_i(b - pos);
+            let a_angle = angle_to_i(a - player_pos);
+            let b_angle = angle_to_i(b - player_pos);
             a_angle.partial_cmp(&b_angle).unwrap()
         });
 

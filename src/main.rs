@@ -36,7 +36,6 @@ fn main() {
 
 pub struct State {
     player: player::Player,
-    fov: FieldOfView,
     game_map: GameMap,
     player_won: bool,
 }
@@ -45,7 +44,6 @@ impl State {
     fn new() -> Self {
         State {
             player: Player::new(),
-            fov: FieldOfView::new(),
             game_map: GameMap::new(),
             player_won: false,
         }
@@ -65,7 +63,7 @@ impl event::EventHandler for State {
         graphics::clear(ctx, graphics::BLACK);
 
         // TODO: These should re-use the meshes instead of remaking each time
-        draw_fov(ctx, &self.fov)?;
+        draw_fov(ctx, &self.player.fov)?;
         draw_obstacles(ctx, &self.game_map)?;
         draw_end_area(ctx, &self.game_map)?;
         draw_player(ctx, &self.player)?;
@@ -83,7 +81,7 @@ fn tick(ctx: &mut Context, state: &mut State) {
 
     let delta = handle_keyboard_input(ctx);
     apply_physics_movement(state, delta);
-    state.fov.update(&state.player, &state.game_map);
+    state.player.update_fov(&state.game_map);
 }
 
 fn draw_fov(ctx: &mut Context, fov: &FieldOfView) -> GameResult<()> {
@@ -124,11 +122,10 @@ fn draw_end_area(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
 }
 
 fn draw_player(ctx: &mut Context, player: &Player) -> GameResult<()> {
-    let player_position = player.get_position();
     let mesh = graphics::Mesh::new_circle(
         ctx,
         graphics::DrawMode::fill(),
-        [player_position.x, player_position.y],
+        [player.pos.x, player.pos.y],
         player.radius,
         0.5,
         graphics::WHITE,

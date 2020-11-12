@@ -1,8 +1,11 @@
 use crate::nalgebra::Point2;
+use crate::FieldOfView;
+use crate::GameMap;
 
 pub struct Player {
-    pos: Point2<f32>,
+    pub pos: Point2<f32>,
     pub radius: f32,
+    pub fov: FieldOfView,
 }
 
 impl Player {
@@ -10,14 +13,11 @@ impl Player {
         Player {
             pos: Point2::new(30.0, 40.0),
             radius: 25.0,
+            fov: FieldOfView::new(),
         }
     }
 
-    pub fn get_position(&self) -> Point2<f32> {
-        self.pos
-    }
-
-    pub fn set_position(&mut self, new_pos: Point2<f32>) {
-        self.pos = new_pos;
+    pub fn update_fov(&mut self, game_map: &GameMap) {
+        self.fov.update(self.pos, game_map)
     }
 }

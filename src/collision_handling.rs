@@ -4,10 +4,10 @@ use crate::polygon::Polygon;
 use crate::State;
 
 pub fn apply_physics_movement(state: &mut State, delta: Vector2<f32>) {
-    let next_pos = &mut (state.player.get_position() + delta);
+    let next_pos = &mut (state.player.pos + delta);
     handle_obstacle_collisions(state, next_pos);
     handle_end_area_intersection(state, *next_pos);
-    state.player.set_position(*next_pos);
+    state.player.pos = *next_pos;
 }
 
 fn handle_obstacle_collisions(state: &mut State, next_pos: &mut Point2<f32>) {
