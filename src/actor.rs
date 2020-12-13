@@ -2,15 +2,15 @@ use crate::nalgebra::Point2;
 use crate::FieldOfView;
 use crate::GameMap;
 
-pub struct Player {
+pub struct Actor {
     pub pos: Point2<f32>,
     pub radius: f32,
     pub fov: FieldOfView,
 }
 
-impl Player {
+impl Actor {
     pub fn new() -> Self {
-        Player {
+        Actor {
             pos: Point2::new(30.0, 40.0),
             radius: 25.0,
             fov: FieldOfView::new(),

@@ -1,17 +1,17 @@
+mod actor;
 mod collision_handling;
 mod colors;
 mod fov;
 mod game_map;
 mod input_handling;
-mod player;
 mod polygon;
 
+use actor::Actor;
 use collision_handling::apply_physics_movement;
 use fov::FieldOfView;
 use game_map::GameMap;
 use ggez::*;
 use input_handling::handle_keyboard_input;
-use player::Player;
 
 fn main() {
     let mut state = State::new();
@@ -35,7 +35,7 @@ fn main() {
 }
 
 pub struct State {
-    player: player::Player,
+    player: Actor,
     game_map: GameMap,
     player_won: bool,
 }
@@ -43,7 +43,7 @@ pub struct State {
 impl State {
     fn new() -> Self {
         State {
-            player: Player::new(),
+            player: Actor::new(),
             game_map: GameMap::new(),
             player_won: false,
         }
@@ -121,7 +121,7 @@ fn draw_end_area(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
     graphics::draw(ctx, &mesh, graphics::DrawParam::default())
 }
 
-fn draw_player(ctx: &mut Context, player: &Player) -> GameResult<()> {
+fn draw_player(ctx: &mut Context, player: &Actor) -> GameResult<()> {
     let mesh = graphics::Mesh::new_circle(
         ctx,
         graphics::DrawMode::fill(),

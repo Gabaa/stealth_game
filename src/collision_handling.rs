@@ -1,5 +1,5 @@
+use crate::actor::Actor;
 use crate::nalgebra::{distance, Point2, Vector2};
-use crate::player::Player;
 use crate::polygon::Polygon;
 use crate::State;
 
@@ -28,7 +28,7 @@ fn handle_obstacle_collisions(state: &mut State, next_pos: &mut Point2<f32>) {
     }
 }
 
-fn move_out_of_obstacle(obstacle: &Polygon, player: &Player, next_pos: &mut Point2<f32>) -> bool {
+fn move_out_of_obstacle(obstacle: &Polygon, player: &Actor, next_pos: &mut Point2<f32>) -> bool {
     if let Some(closest_point) = get_closest_point_on_polygon(obstacle, *next_pos) {
         let dist = distance(&closest_point, &next_pos);
         if dist < player.radius {
