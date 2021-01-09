@@ -8,7 +8,7 @@ mod polygon;
 
 use actor::Actor;
 use collision_handling::apply_physics_movement;
-use fov::FieldOfView;
+use fov::{ConeFieldOfView, FieldOfView, GlobalFieldOfView};
 use game_map::GameMap;
 use ggez::*;
 use input_handling::handle_keyboard_input;
@@ -45,8 +45,12 @@ pub struct State {
 impl State {
     fn new() -> Self {
         State {
-            player: Actor::new(30.0, 40.0, FieldOfView::new()),
-            guards: vec![Actor::new(600.0, 50.0, FieldOfView::new())],
+            player: Actor::new(30.0, 40.0, Box::new(ConeFieldOfView::new(90.0))),
+            guards: vec![Actor::new(
+                600.0,
+                50.0,
+                Box::new(ConeFieldOfView::new(90.0)),
+            )],
             game_map: GameMap::new(),
             player_won: false,
             player_found: false,
@@ -92,7 +96,7 @@ fn tick(ctx: &mut Context, state: &mut State) {
     apply_physics_movement(state, delta);
 
     for guard in &mut state.guards {
-        guard.update_fov_cone(&state.game_map);
+        guard.update_fov(&state.game_map);
     }
     state.player.update_fov(&state.game_map);
 }
@@ -105,11 +109,15 @@ fn draw_all_fov(ctx: &mut Context, player: &Actor, guards: &Vec<Actor>) -> GameR
     draw_fov(ctx, &player.fov, colors::PLAYER_VISIBLE_AREA)
 }
 
-fn draw_fov(ctx: &mut Context, fov: &FieldOfView, color: graphics::Color) -> GameResult<()> {
+fn draw_fov(
+    ctx: &mut Context,
+    fov: &Box<dyn FieldOfView>,
+    color: graphics::Color,
+) -> GameResult<()> {
     let mesh = graphics::Mesh::new_polygon(
         ctx,
         graphics::DrawMode::fill(),
-        &fov.visible_area.verts,
+        &fov.get_visible_area().verts,
         color,
     )?;
 

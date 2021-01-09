@@ -5,6 +5,7 @@ use crate::State;
 
 pub fn apply_physics_movement(state: &mut State, delta: Vector2<f32>) {
     let next_pos = &mut (state.player.pos + delta);
+    state.player.direction = delta.normalize();
     handle_obstacle_collisions(state, next_pos);
     handle_end_area_intersection(state, *next_pos);
     state.player.pos = *next_pos;
