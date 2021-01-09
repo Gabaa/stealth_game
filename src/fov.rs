@@ -1,6 +1,7 @@
 use crate::game_map::GameMap;
 use crate::nalgebra::{distance_squared, Matrix2, Point2, Vector2};
 use crate::polygon::Polygon;
+use std::{cmp::Ordering, f32::consts::PI};
 
 pub struct FieldOfView {
     pub visible_area: Polygon,
@@ -18,12 +19,61 @@ impl FieldOfView {
         }
     }
 
-    pub fn update(&mut self, player_pos: Point2<f32>, game_map: &GameMap) {
+    pub fn recalculate_global(&mut self, player_pos: Point2<f32>, game_map: &GameMap) {
         let mut new_verts: Vec<Point2<f32>> = vec![];
 
         for obstacle in &game_map.obstacles {
             for vert in &obstacle.verts {
                 let direction = vert - player_pos;
+
+                let cw_rot_matrix = get_rotation_matrix(0.001);
+                let ccw_rot_matrix = get_rotation_matrix(-0.001);
+                if let Some(point) = raycast(player_pos, direction, &game_map.obstacles) {
+                    new_verts.push(point);
+                };
+                if let Some(point) =
+                    raycast(player_pos, cw_rot_matrix * direction, &game_map.obstacles)
+                {
+                    new_verts.push(point);
+                };
+                if let Some(point) =
+                    raycast(player_pos, ccw_rot_matrix * direction, &game_map.obstacles)
+                {
+                    new_verts.push(point);
+                };
+            }
+        }
+
+        new_verts.sort_by(|a, b| {
+            let a_angle = angle_to_i(a - player_pos);
+            let b_angle = angle_to_i(b - player_pos);
+            a_angle.partial_cmp(&b_angle).unwrap()
+        });
+
+        self.visible_area = Polygon::new(new_verts);
+    }
+
+    pub fn recalculate_cone(
+        &mut self,
+        player_pos: Point2<f32>,
+        player_dir: Vector2<f32>,
+        game_map: &GameMap,
+    ) {
+        const MAX_FOV_DEGREES: f32 = 90.0;
+        let max_fov_radians: f32 = MAX_FOV_DEGREES.to_radians();
+
+        let mut new_verts: Vec<Point2<f32>> = vec![player_pos];
+
+        for obstacle in &game_map.obstacles {
+            for vert in &obstacle.verts {
+                let direction = vert - player_pos;
+                let angle = player_dir.angle(&direction);
+
+                if let Some(ord) = angle.partial_cmp(&max_fov_radians) {
+                    if ord == Ordering::Greater {
+                        continue;
+                    }
+                }
 
                 let cw_rot_matrix = get_rotation_matrix(0.001);
                 let ccw_rot_matrix = get_rotation_matrix(-0.001);
