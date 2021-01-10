@@ -1,6 +1,7 @@
 mod actor;
 mod collision_handling;
 mod colors;
+mod drawing;
 mod fov;
 mod game_map;
 mod input_handling;
@@ -8,7 +9,8 @@ mod polygon;
 
 use actor::Actor;
 use collision_handling::apply_physics_movement;
-use fov::{ConeFieldOfView, FieldOfView, GlobalFieldOfView};
+use drawing::draw_all;
+use fov::{ConeFieldOfView, FieldOfView};
 use game_map::GameMap;
 use ggez::*;
 use input_handling::handle_keyboard_input;
@@ -45,7 +47,7 @@ pub struct State {
 impl State {
     fn new() -> Self {
         State {
-            player: Actor::new(30.0, 40.0, Box::new(ConeFieldOfView::new(90.0))),
+            player: Actor::new(30.0, 40.0, Box::new(ConeFieldOfView::new(135.0))),
             guards: vec![Actor::new(
                 600.0,
                 50.0,
@@ -69,14 +71,7 @@ impl event::EventHandler for State {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
-
-        // TODO: These should re-use the meshes instead of remaking each time
-        draw_all_fov(ctx, &self.player, &self.guards)?;
-        draw_obstacles(ctx, &self.game_map)?;
-        draw_end_area(ctx, &self.game_map)?;
-        draw_actors(ctx, &self.player, &self.guards)?;
-
-        // Present on screen
+        draw_all(ctx, &self)?;
         graphics::present(ctx)
     }
 }
@@ -99,74 +94,4 @@ fn tick(ctx: &mut Context, state: &mut State) {
         guard.update_fov(&state.game_map);
     }
     state.player.update_fov(&state.game_map);
-}
-
-fn draw_all_fov(ctx: &mut Context, player: &Actor, guards: &Vec<Actor>) -> GameResult<()> {
-    for guard in guards {
-        draw_fov(ctx, &guard.fov, colors::GUARD_VISIBLE_AREA)?;
-    }
-
-    draw_fov(ctx, &player.fov, colors::PLAYER_VISIBLE_AREA)
-}
-
-fn draw_fov(
-    ctx: &mut Context,
-    fov: &Box<dyn FieldOfView>,
-    color: graphics::Color,
-) -> GameResult<()> {
-    let mesh = graphics::Mesh::new_polygon(
-        ctx,
-        graphics::DrawMode::fill(),
-        &fov.get_visible_area().verts,
-        color,
-    )?;
-
-    graphics::draw(ctx, &mesh, graphics::DrawParam::default())
-}
-
-fn draw_obstacles(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
-    for polygon in &game_map.obstacles {
-        let mesh = graphics::Mesh::new_polygon(
-            ctx,
-            graphics::DrawMode::stroke(3.0),
-            &polygon.verts,
-            colors::OBSTACLE,
-        )?;
-
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
-    }
-
-    Ok(())
-}
-
-fn draw_end_area(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
-    let mesh = graphics::Mesh::new_polygon(
-        ctx,
-        graphics::DrawMode::fill(),
-        &game_map.end_area.verts,
-        colors::END_AREA,
-    )?;
-
-    graphics::draw(ctx, &mesh, graphics::DrawParam::default())
-}
-
-fn draw_actors(ctx: &mut Context, player: &Actor, guards: &Vec<Actor>) -> GameResult<()> {
-    for guard in guards {
-        draw_actor(ctx, guard)?;
-    }
-
-    draw_actor(ctx, player)
-}
-
-fn draw_actor(ctx: &mut Context, actor: &Actor) -> GameResult<()> {
-    let mesh = graphics::Mesh::new_circle(
-        ctx,
-        graphics::DrawMode::fill(),
-        [actor.pos.x, actor.pos.y],
-        actor.radius,
-        0.5,
-        graphics::WHITE,
-    )?;
-
-    graphics::draw(ctx, &mesh, graphics::DrawParam::default())
 }

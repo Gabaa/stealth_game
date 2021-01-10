@@ -1,11 +1,11 @@
-use crate::nalgebra::{Point2, Vector2};
+use crate::nalgebra::{Point2, Unit, Vector2};
 use crate::FieldOfView;
 use crate::GameMap;
 
 pub struct Actor {
     pub pos: Point2<f32>,
     pub radius: f32,
-    pub direction: Vector2<f32>,
+    pub direction: Unit<Vector2<f32>>,
     pub fov: Box<dyn FieldOfView>,
 }
 
@@ -14,8 +14,8 @@ impl Actor {
         Actor {
             pos: Point2::new(x, y),
             radius: 25.0,
-            direction: Vector2::new(1.0, 0.0),
-            fov: fov,
+            direction: Unit::new_normalize(Vector2::new(1.0, 0.0)),
+            fov,
         }
     }
 

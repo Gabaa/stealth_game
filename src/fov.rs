@@ -1,11 +1,16 @@
 use crate::game_map::GameMap;
-use crate::nalgebra::{distance_squared, Matrix2, Point, Point2, Unit, Vector2};
+use crate::nalgebra::{distance, Matrix2, Point2, Unit, Vector2};
 use crate::polygon::Polygon;
 use std::cmp::Ordering;
 
 pub trait FieldOfView {
     fn get_visible_area(&self) -> &Polygon;
-    fn recalculate(&mut self, position: Point2<f32>, direction: Vector2<f32>, game_map: &GameMap);
+    fn recalculate(
+        &mut self,
+        position: Point2<f32>,
+        direction: Unit<Vector2<f32>>,
+        game_map: &GameMap,
+    );
 }
 
 pub struct ConeFieldOfView {
@@ -17,12 +22,7 @@ pub struct ConeFieldOfView {
 impl ConeFieldOfView {
     pub fn new(fov_degrees: f32) -> Self {
         ConeFieldOfView {
-            visible_area: Polygon::new(vec![
-                Point2::new(0.0, 0.0),
-                Point2::new(800.0, 0.0),
-                Point2::new(800.0, 600.0),
-                Point2::new(0.0, 600.0),
-            ]),
+            visible_area: Polygon::new(vec![]),
             view_angle_radians: fov_degrees.to_radians(),
             view_distance: 200.0,
         }
@@ -37,55 +37,72 @@ impl FieldOfView for ConeFieldOfView {
     fn recalculate(
         &mut self,
         actor_pos: Point2<f32>,
-        actor_direction: Vector2<f32>,
+        actor_direction: Unit<Vector2<f32>>,
         game_map: &GameMap,
     ) {
         let mut new_verts: Vec<Point2<f32>> = vec![actor_pos];
+
+        // Shoot a ray straight forward, and at each edge of their vision
+        // TODO: Shoot more rays, so the shape is more understandable
+        let ray = Ray::new(actor_pos, actor_direction);
+        new_verts.push(
+            match raycast(&ray, &game_map.obstacles, self.view_distance) {
+                Some(hit_pos) => hit_pos,
+                None => actor_pos + ray.direction.as_ref() * self.view_distance,
+            },
+        );
+        let rotate_rad = self.view_angle_radians / 2.0;
+        let cw_edge_ray = ray.rotate(rotate_rad);
+        new_verts.push(
+            match raycast(&cw_edge_ray, &game_map.obstacles, self.view_distance) {
+                Some(hit_pos) => hit_pos,
+                None => actor_pos + cw_edge_ray.direction.as_ref() * self.view_distance,
+            },
+        );
+        let ccw_edge_ray = ray.rotate(-rotate_rad);
+        new_verts.push(
+            match raycast(&ccw_edge_ray, &game_map.obstacles, self.view_distance) {
+                Some(hit_pos) => hit_pos,
+                None => actor_pos + ccw_edge_ray.direction.as_ref() * self.view_distance,
+            },
+        );
 
         for obstacle in &game_map.obstacles {
             for vert in &obstacle.verts {
                 let ray_direction = vert - actor_pos;
                 let angle = actor_direction.angle(&ray_direction);
 
-                if let Some(ord) = angle.partial_cmp(&self.view_angle_radians) {
+                if let Some(ord) = angle.partial_cmp(&(self.view_angle_radians / 2.0)) {
                     if ord == Ordering::Greater {
                         continue;
                     }
                 }
 
-                let cw_rot_matrix = get_rotation_matrix(0.001);
-                let ccw_rot_matrix = get_rotation_matrix(-0.001);
-                if let Some(point) = raycast(
-                    actor_pos,
-                    Unit::new_normalize(ray_direction),
-                    &game_map.obstacles,
-                    self.view_distance,
-                ) {
+                let ray = Ray::new(actor_pos, Unit::new_normalize(ray_direction));
+                if let Some(point) = raycast(&ray, &game_map.obstacles, self.view_distance) {
                     new_verts.push(point);
                 };
-                if let Some(point) = raycast(
-                    actor_pos,
-                    Unit::new_normalize(cw_rot_matrix * ray_direction),
-                    &game_map.obstacles,
-                    self.view_distance,
-                ) {
+
+                let cw_rot_ray = ray.rotate(0.001);
+                if let Some(point) = raycast(&cw_rot_ray, &game_map.obstacles, self.view_distance) {
                     new_verts.push(point);
                 };
-                if let Some(point) = raycast(
-                    actor_pos,
-                    Unit::new_normalize(ccw_rot_matrix * ray_direction),
-                    &game_map.obstacles,
-                    self.view_distance,
-                ) {
+
+                let ccw_rot_ray = ray.rotate(-0.001);
+                if let Some(point) = raycast(&ccw_rot_ray, &game_map.obstacles, self.view_distance)
+                {
                     new_verts.push(point);
                 };
             }
         }
 
         new_verts.sort_by(|a, b| {
-            let a_angle = angle_to_i(a - actor_pos);
-            let b_angle = angle_to_i(b - actor_pos);
-            a_angle.partial_cmp(&b_angle).unwrap()
+            let a_angle = signed_angle(&(a - actor_pos), actor_direction.as_ref());
+            let b_angle = signed_angle(&(b - actor_pos), actor_direction.as_ref());
+            match a_angle.partial_cmp(&b_angle) {
+                Some(ord) => ord,
+                None => panic!("Cannot sort the FOV verts, {} and {}", a, b),
+            }
         });
 
         self.visible_area = Polygon::new(new_verts);
@@ -116,45 +133,39 @@ impl FieldOfView for GlobalFieldOfView {
         &self.visible_area
     }
 
-    fn recalculate(&mut self, position: Point2<f32>, _direction: Vector2<f32>, game_map: &GameMap) {
+    fn recalculate(
+        &mut self,
+        position: Point2<f32>,
+        _direction: Unit<Vector2<f32>>,
+        game_map: &GameMap,
+    ) {
         let mut new_verts: Vec<Point2<f32>> = vec![];
 
         for obstacle in &game_map.obstacles {
             for vert in &obstacle.verts {
                 let direction = vert - position;
 
-                let cw_rot_matrix = get_rotation_matrix(0.001);
-                let ccw_rot_matrix = get_rotation_matrix(-0.001);
-                if let Some(point) = raycast(
-                    position,
-                    Unit::new_normalize(direction),
-                    &game_map.obstacles,
-                    self.view_distance,
-                ) {
+                let ray = Ray::new(position, Unit::new_normalize(direction));
+                if let Some(point) = raycast(&ray, &game_map.obstacles, self.view_distance) {
                     new_verts.push(point);
                 };
-                if let Some(point) = raycast(
-                    position,
-                    Unit::new_normalize(cw_rot_matrix * direction),
-                    &game_map.obstacles,
-                    self.view_distance,
-                ) {
+
+                let cw_rot_ray = ray.rotate(0.001);
+                if let Some(point) = raycast(&cw_rot_ray, &game_map.obstacles, self.view_distance) {
                     new_verts.push(point);
                 };
-                if let Some(point) = raycast(
-                    position,
-                    Unit::new_normalize(ccw_rot_matrix * direction),
-                    &game_map.obstacles,
-                    self.view_distance,
-                ) {
+
+                let ccw_rot_ray = ray.rotate(-0.001);
+                if let Some(point) = raycast(&ccw_rot_ray, &game_map.obstacles, self.view_distance)
+                {
                     new_verts.push(point);
                 };
             }
         }
 
         new_verts.sort_by(|a, b| {
-            let a_angle = angle_to_i(a - position);
-            let b_angle = angle_to_i(b - position);
+            let a_angle = signed_angle(&(a - position), &Vector2::new(1.0, 0.0));
+            let b_angle = signed_angle(&(b - position), &Vector2::new(1.0, 0.0));
             a_angle.partial_cmp(&b_angle).unwrap()
         });
 
@@ -166,47 +177,67 @@ fn get_rotation_matrix(theta: f32) -> Matrix2<f32> {
     Matrix2::new(theta.cos(), -theta.sin(), theta.sin(), theta.cos())
 }
 
-fn angle_to_i(v: Vector2<f32>) -> f32 {
-    let i = Vector2::new(1.0, 0.0);
-
-    let a_dot = i.dot(&v);
-    let a_det = i.x * v.y - i.y * v.x;
+fn signed_angle(v1: &Vector2<f32>, v2: &Vector2<f32>) -> f32 {
+    let a_dot = v2.dot(&v1);
+    let a_det = v2.x * v1.y - v2.y * v1.x;
 
     a_dot.atan2(a_det)
 }
 
-fn raycast(
-    pos: Point2<f32>,
-    dir: Unit<Vector2<f32>>,
-    polygons: &[Polygon],
-    max_dist: f32,
-) -> Option<Point2<f32>> {
-    let mut closest_point_dist = std::f32::MAX;
-    let mut closest_point: Option<Point2<f32>> = None;
+struct Ray {
+    position: Point2<f32>,
+    direction: Unit<Vector2<f32>>,
+}
 
-    if max_dist > 0.0 {
-        closest_point_dist = max_dist.powi(2);
-        closest_point = Some(Point::from(dir.as_ref() * max_dist));
+impl Ray {
+    fn new(position: Point2<f32>, direction: Unit<Vector2<f32>>) -> Self {
+        Ray {
+            position,
+            direction,
+        }
     }
 
+    fn rotate(&self, theta: f32) -> Self {
+        let rot_matrix = get_rotation_matrix(theta);
+        let new_direction = rot_matrix * self.direction.as_ref();
+        Ray::new(self.position, Unit::new_normalize(new_direction))
+    }
+}
+
+fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Point2<f32>> {
+    let mut closest_point_dist = std::f32::MAX;
+    let mut closest_point = None;
+
     for polygon in polygons {
-        for (start, end) in polygon.edge_iter() {
-            let edge_dir = end - start;
-            let angle = dir.angle(&edge_dir);
+        for (v1, v2) in polygon.edge_iter() {
+            // Find the smallest angle between ray and edge
+            let v1_to_v2 = v2 - v1;
+            let v2_to_v1 = v1 - v2;
+            let v1_to_v2_angle = ray.direction.angle(&v1_to_v2);
+            let v2_to_v1_angle = ray.direction.angle(&v2_to_v1);
+            let (edge_dir, start, angle) = if v1_to_v2_angle < v2_to_v1_angle {
+                (v1_to_v2, v1, v1_to_v2_angle)
+            } else {
+                (v2_to_v1, v2, v2_to_v1_angle)
+            };
 
             if angle == 0.0 {
-                break;
+                continue;
             }
 
             // T2 = (r_dx*(s_py-r_py) + r_dy*(r_px-s_px))/(s_dx*r_dy - s_dy*r_dx)
-            let t2 = (dir.x * (start.y - pos.y) + dir.y * (pos.x - start.x))
-                / (edge_dir.x * dir.y - edge_dir.y * dir.x);
+            let t2 = (ray.direction.x * (start.y - ray.position.y)
+                + ray.direction.y * (ray.position.x - start.x))
+                / (edge_dir.x * ray.direction.y - edge_dir.y * ray.direction.x);
             // T1 = (s_px+s_dx*T2-r_px)/r_dx
-            let t1 = (start.x + edge_dir.x * t2 - pos.x) / dir.x;
+            let t1 = (start.x + edge_dir.x * t2 - ray.position.x) / ray.direction.x;
 
             if 0.0 < t1 && 0.0 <= t2 && t2 <= 1.0 {
-                let point = Point2::new(pos.x + dir.x * t1, pos.y + dir.y * t1);
-                let new_dist = distance_squared(&point, &pos);
+                let point = Point2::new(
+                    ray.position.x + ray.direction.x * t1,
+                    ray.position.y + ray.direction.y * t1,
+                );
+                let new_dist = distance(&point, &ray.position);
                 if new_dist < closest_point_dist {
                     closest_point = Some(point);
                     closest_point_dist = new_dist;
@@ -215,36 +246,81 @@ fn raycast(
         }
     }
 
-    closest_point
+    if 0.0 < max_distance && max_distance < closest_point_dist {
+        None
+    } else {
+        closest_point
+    }
 }
 
 #[cfg(test)]
 mod raycast_tests {
-    use super::{raycast, Point2, Polygon, Unit, Vector2};
+    use super::{raycast, Point2, Polygon, Ray, Unit, Vector2};
 
     #[test]
     fn hit_nothing() {
         let pos = Point2::new(0.0, 0.0);
-        let dir = Unit::new_normalize(Vector2::new(1.0, 0.0));
+        let dir = Vector2::new(1.0, 0.0);
+        let ray = Ray::new(pos, dir);
         let polygons = vec![];
-        let hit = raycast(pos, dir, &polygons, 0.0);
+        let hit = raycast(&ray, &polygons, 0.0);
         assert!(hit.is_none());
     }
 
     #[test]
-    fn hit_something() {
+    fn hit_square_edge() {
         let pos = Point2::new(0.0, 0.0);
-        let dir = Unit::new_normalize(Vector2::new(1.0, 0.0));
+        let dir = Vector2::new(1.0, 0.0);
+        let ray = Ray::new(pos, Unit::new_normalize(dir));
+
         let polygons = vec![Polygon::new(vec![
             Point2::new(1.0, -1.0),
             Point2::new(1.0, 1.0),
             Point2::new(2.0, 1.0),
             Point2::new(2.0, -1.0),
         ])];
-        let hit = raycast(pos, dir, &polygons, 0.0);
+        let hit = raycast(&ray, &polygons, 0.0);
         match hit {
-            Some(pos) => assert_eq!(pos, Point2::new(1.0, 0.0)),
+            Some(hit_pos) => assert_eq!(hit_pos, Point2::new(1.0, 0.0)),
             None => panic!("did not hit anything"),
         }
+    }
+
+    #[test]
+    fn hit_square_corner() {
+        let pos = Point2::new(0.0, 0.0);
+        let dir = Vector2::new(1.0, 0.0);
+        let ray = Ray::new(pos, Unit::new_normalize(dir));
+
+        let verts = vec![
+            Point2::new(1.0, 1.0),
+            Point2::new(2.0, 1.0),
+            Point2::new(2.0, 0.0),
+            Point2::new(1.0, 0.0),
+        ];
+        let polygons = vec![Polygon::new(verts)];
+
+        let hit = raycast(&ray, &polygons, 0.0);
+        match hit {
+            Some(hit_pos) => assert_eq!(hit_pos, Point2::new(1.0, 0.0)),
+            None => panic!("did not hit anything"),
+        }
+    }
+
+    #[test]
+    fn hit_nothing_distance() {
+        let pos = Point2::new(0.0, 0.0);
+        let dir = Vector2::new(1.0, 0.0);
+        let ray = Ray::new(pos, Unit::new_normalize(dir));
+
+        let polygons = vec![Polygon::new(vec![
+            Point2::new(6.0, -1.0),
+            Point2::new(6.0, 1.0),
+            Point2::new(7.0, 1.0),
+            Point2::new(7.0, -1.0),
+        ])];
+
+        let hit = raycast(&ray, &polygons, 5.0);
+        assert!(hit.is_none());
     }
 }

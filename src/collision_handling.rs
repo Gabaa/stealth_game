@@ -1,11 +1,13 @@
 use crate::actor::Actor;
-use crate::nalgebra::{distance, Point2, Vector2};
+use crate::nalgebra::{distance, Point2, Unit, Vector2};
 use crate::polygon::Polygon;
 use crate::State;
 
 pub fn apply_physics_movement(state: &mut State, delta: Vector2<f32>) {
     let next_pos = &mut (state.player.pos + delta);
-    state.player.direction = delta.normalize();
+    if delta.magnitude() > 0.0 {
+        state.player.direction = Unit::new_normalize(delta);
+    }
     handle_obstacle_collisions(state, next_pos);
     handle_end_area_intersection(state, *next_pos);
     state.player.pos = *next_pos;
