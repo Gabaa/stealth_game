@@ -146,18 +146,17 @@ impl FieldOfView for GlobalFieldOfView {
                 let direction = vert - position;
 
                 let ray = Ray::new(position, Unit::new_normalize(direction));
-                if let Some(point) = raycast(&ray, &game_map.obstacles, self.view_distance) {
+                if let Some(point) = raycast(&ray, &game_map.obstacles, 0.0) {
                     new_verts.push(point);
                 };
 
                 let cw_rot_ray = ray.rotate(0.001);
-                if let Some(point) = raycast(&cw_rot_ray, &game_map.obstacles, self.view_distance) {
+                if let Some(point) = raycast(&cw_rot_ray, &game_map.obstacles, 0.0) {
                     new_verts.push(point);
                 };
 
                 let ccw_rot_ray = ray.rotate(-0.001);
-                if let Some(point) = raycast(&ccw_rot_ray, &game_map.obstacles, self.view_distance)
-                {
+                if let Some(point) = raycast(&ccw_rot_ray, &game_map.obstacles, 0.0) {
                     new_verts.push(point);
                 };
             }
@@ -261,7 +260,7 @@ mod raycast_tests {
     fn hit_nothing() {
         let pos = Point2::new(0.0, 0.0);
         let dir = Vector2::new(1.0, 0.0);
-        let ray = Ray::new(pos, dir);
+        let ray = Ray::new(pos, Unit::new_normalize(dir));
         let polygons = vec![];
         let hit = raycast(&ray, &polygons, 0.0);
         assert!(hit.is_none());
@@ -322,5 +321,44 @@ mod raycast_tests {
 
         let hit = raycast(&ray, &polygons, 5.0);
         assert!(hit.is_none());
+    }
+
+    #[test]
+    fn hit_triangle_corner() {
+        let pos = Point2::new(0.0, 0.0);
+        let dir = Vector2::new(1.0, 0.0);
+        let ray = Ray::new(pos, Unit::new_normalize(dir));
+
+        let verts = vec![
+            Point2::new(1.0, 0.0),
+            Point2::new(0.5, 0.5),
+            Point2::new(1.5, 0.5),
+        ];
+        let polygons = vec![Polygon::new(verts)];
+
+        let hit = raycast(&ray, &polygons, 0.0);
+        match hit {
+            Some(hit_pos) => assert_eq!(hit_pos, Point2::new(1.0, 0.0)),
+            None => panic!("did not hit triangle"),
+        }
+    }
+
+    #[test]
+    fn hit_upwards() {
+        let pos = Point2::new(0.0, 0.0);
+        let dir = Vector2::new(0.0, 1.0);
+        let ray = Ray::new(pos, Unit::new_normalize(dir));
+
+        let polygons = vec![Polygon::new(vec![
+            Point2::new(-1.0, 1.0),
+            Point2::new(1.0, 1.0),
+            Point2::new(1.0, 2.0),
+            Point2::new(-1.0, 2.0),
+        ])];
+        let hit = raycast(&ray, &polygons, 0.0);
+        match hit {
+            Some(hit_pos) => assert_eq!(hit_pos, Point2::new(0.0, 1.0)),
+            None => panic!("did not hit anything"),
+        }
     }
 }
