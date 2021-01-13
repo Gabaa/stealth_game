@@ -10,7 +10,7 @@ mod polygon;
 use actor::Actor;
 use collision_handling::apply_physics_movement;
 use drawing::draw_all;
-use fov::{ConeFieldOfView, FieldOfView};
+use fov::{ConeFieldOfView, FieldOfView, GlobalFieldOfView};
 use game_map::GameMap;
 use ggez::*;
 use input_handling::handle_keyboard_input;
@@ -47,7 +47,7 @@ pub struct State {
 impl State {
     fn new() -> Self {
         State {
-            player: Actor::new(30.0, 40.0, Box::new(ConeFieldOfView::new(135.0))),
+            player: Actor::new(30.0, 40.0, Box::new(GlobalFieldOfView::new())),
             guards: vec![Actor::new(
                 600.0,
                 50.0,

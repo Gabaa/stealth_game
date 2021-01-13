@@ -2,6 +2,7 @@ use crate::game_map::GameMap;
 use crate::nalgebra::{distance, Matrix2, Point2, Unit, Vector2};
 use crate::polygon::Polygon;
 use std::cmp::Ordering;
+use std::f32::consts::FRAC_PI_2;
 
 pub trait FieldOfView {
     fn get_visible_area(&self) -> &Polygon;
@@ -209,27 +210,32 @@ fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Point2<
 
     for polygon in polygons {
         for (v1, v2) in polygon.edge_iter() {
-            // Find the smallest angle between ray and edge
-            let v1_to_v2 = v2 - v1;
-            let v2_to_v1 = v1 - v2;
-            let v1_to_v2_angle = ray.direction.angle(&v1_to_v2);
-            let v2_to_v1_angle = ray.direction.angle(&v2_to_v1);
-            let (edge_dir, start, angle) = if v1_to_v2_angle < v2_to_v1_angle {
-                (v1_to_v2, v1, v1_to_v2_angle)
+            // Find the smallest angle between ray and line segment
+            let (start, end) = if is_angle_right_or_less(v1, v2, *ray.direction) {
+                (v1, v2)
             } else {
-                (v2_to_v1, v2, v2_to_v1_angle)
+                (v2, v1)
             };
 
+            let edge = end - start;
+            let angle = ray.direction.angle(&edge);
+
+            // If lines are parallel, they won't hit
             if angle == 0.0 {
                 continue;
             }
 
+            // TODO: doesn't work with rays going straight up (or down???).
+            // Maybe this can help???
+            // https://stackoverflow.com/questions/14307158/how-do-you-check-for-intersection-between-a-line-segment-and-a-line-ray-emanatin
+
+            // TODO: Clean this up!
             // T2 = (r_dx*(s_py-r_py) + r_dy*(r_px-s_px))/(s_dx*r_dy - s_dy*r_dx)
             let t2 = (ray.direction.x * (start.y - ray.position.y)
                 + ray.direction.y * (ray.position.x - start.x))
-                / (edge_dir.x * ray.direction.y - edge_dir.y * ray.direction.x);
+                / (edge.x * ray.direction.y - edge.y * ray.direction.x);
             // T1 = (s_px+s_dx*T2-r_px)/r_dx
-            let t1 = (start.x + edge_dir.x * t2 - ray.position.x) / ray.direction.x;
+            let t1 = (start.x + edge.x * t2 - ray.position.x) / ray.direction.x;
 
             if 0.0 < t1 && 0.0 <= t2 && t2 <= 1.0 {
                 let point = Point2::new(
@@ -250,6 +256,10 @@ fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Point2<
     } else {
         closest_point
     }
+}
+
+fn is_angle_right_or_less(v1: Point2<f32>, v2: Point2<f32>, ray_direction: Vector2<f32>) -> bool {
+    ray_direction.angle(&(v2 - v1)) <= FRAC_PI_2
 }
 
 #[cfg(test)]
