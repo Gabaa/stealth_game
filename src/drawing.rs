@@ -1,4 +1,5 @@
-use crate::{colors, graphics, Actor, Context, FieldOfView, GameMap, GameResult, State};
+use crate::{actor::Actor, colors, fov::FieldOfView, game_map::GameMap, State};
+use ggez::{graphics, Context, GameResult};
 
 pub fn draw_all(ctx: &mut Context, state: &State) -> GameResult<()> {
     // TODO: These should re-use the meshes instead of remaking each time
