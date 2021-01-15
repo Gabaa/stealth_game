@@ -48,11 +48,11 @@ pub struct State {
 impl State {
     fn new() -> Self {
         State {
-            player: Actor::new(30.0, 40.0, Box::new(ConeFieldOfView::new(135.0))),
+            player: Actor::new(30.0, 40.0, Box::new(ConeFieldOfView::new(135.0, 300.0))),
             guards: vec![Actor::new(
                 600.0,
                 50.0,
-                Box::new(ConeFieldOfView::new(90.0)),
+                Box::new(ConeFieldOfView::new(90.0, 200.0)),
             )],
             game_map: GameMap::new(),
             player_won: false,

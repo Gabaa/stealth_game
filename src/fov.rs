@@ -16,17 +16,24 @@ pub trait FieldOfView {
 
 pub struct ConeFieldOfView {
     visible_area: Polygon,
-    view_angle_radians: f32,
+    view_angle: f32,
     view_distance: f32,
 }
 
 impl ConeFieldOfView {
-    pub fn new(fov_degrees: f32) -> Self {
+    pub fn new(fov_degrees: f32, view_distance: f32) -> Self {
         ConeFieldOfView {
             visible_area: Polygon::new(vec![]),
-            view_angle_radians: fov_degrees.to_radians(),
-            view_distance: 200.0,
+            view_angle: fov_degrees.to_radians(),
+            view_distance,
         }
+    }
+}
+
+fn raycast_hit_or_max_dist(ray: &Ray, obstacles: &[Polygon], max_distance: f32) -> Point2<f32> {
+    match raycast(ray, obstacles, max_distance) {
+        Some(hit_pos) => hit_pos,
+        None => ray.position + ray.direction.as_ref() * max_distance,
     }
 }
 
@@ -43,37 +50,35 @@ impl FieldOfView for ConeFieldOfView {
     ) {
         let mut new_verts: Vec<Point2<f32>> = vec![actor_pos];
 
-        // Shoot a ray straight forward, and at each edge of their vision
-        // TODO: Shoot more rays, so the shape is more understandable
+        // Shoot a ray straight forward
         let ray = Ray::new(actor_pos, actor_direction);
-        new_verts.push(
-            match raycast(&ray, &game_map.obstacles, self.view_distance) {
-                Some(hit_pos) => hit_pos,
-                None => actor_pos + ray.direction.as_ref() * self.view_distance,
-            },
-        );
-        let rotate_rad = self.view_angle_radians / 2.0;
-        let cw_edge_ray = ray.rotate(rotate_rad);
-        new_verts.push(
-            match raycast(&cw_edge_ray, &game_map.obstacles, self.view_distance) {
-                Some(hit_pos) => hit_pos,
-                None => actor_pos + cw_edge_ray.direction.as_ref() * self.view_distance,
-            },
-        );
-        let ccw_edge_ray = ray.rotate(-rotate_rad);
-        new_verts.push(
-            match raycast(&ccw_edge_ray, &game_map.obstacles, self.view_distance) {
-                Some(hit_pos) => hit_pos,
-                None => actor_pos + ccw_edge_ray.direction.as_ref() * self.view_distance,
-            },
-        );
+        new_verts.push(raycast_hit_or_max_dist(
+            &ray,
+            &game_map.obstacles,
+            self.view_distance,
+        ));
+
+        let num_rays = 20;
+        for i in 1..(num_rays + 1) {
+            let z = (self.view_angle / 2.0) * (i as f32) / (num_rays as f32);
+            new_verts.push(raycast_hit_or_max_dist(
+                &ray.rotate(z),
+                &game_map.obstacles,
+                self.view_distance,
+            ));
+            new_verts.push(raycast_hit_or_max_dist(
+                &ray.rotate(-z),
+                &game_map.obstacles,
+                self.view_distance,
+            ));
+        }
 
         for obstacle in &game_map.obstacles {
             for vert in &obstacle.verts {
                 let ray_direction = vert - actor_pos;
                 let angle = actor_direction.angle(&ray_direction);
 
-                if let Some(ord) = angle.partial_cmp(&(self.view_angle_radians / 2.0)) {
+                if let Some(ord) = angle.partial_cmp(&(self.view_angle / 2.0)) {
                     if ord == Ordering::Greater {
                         continue;
                     }
