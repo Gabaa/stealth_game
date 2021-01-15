@@ -21,13 +21,17 @@ impl Ray {
     }
 }
 
+fn get_rotation_matrix(theta: f32) -> Matrix2<f32> {
+    Matrix2::new(theta.cos(), -theta.sin(), theta.sin(), theta.cos())
+}
+
 pub fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Point2<f32>> {
     let mut closest_point_dist = std::f32::MAX;
     let mut closest_point = None;
 
     for polygon in polygons {
         for (v1, v2) in polygon.edge_iter() {
-            if let Some(point) = line_intersection_v2(ray, v1, v2) {
+            if let Some(point) = line_intersection(ray, v1, v2) {
                 let new_dist = distance(&point, &ray.position);
                 if new_dist < closest_point_dist {
                     closest_point = Some(point);
@@ -45,47 +49,13 @@ pub fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Poi
 }
 
 /// A ray-line segment intersection algorithm.
-fn _line_intersection_v1(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
-    // Find the smallest angle between ray and line segment
-    let (start, end) = if ray.direction.dot(&(v2 - v1)) >= 0.0 {
-        (v1, v2)
-    } else {
-        (v2, v1)
-    };
-
-    let edge = end - start;
-    let angle = ray.direction.angle(&edge);
-
-    // If lines are parallel, they won't hit
-    if angle == 0.0 {
-        return None;
-    }
-
-    // T2 = (r_dx*(s_py-r_py) + r_dy*(r_px-s_px))/(s_dx*r_dy - s_dy*r_dx)
-    let t2 = (ray.direction.x * (start.y - ray.position.y)
-        + ray.direction.y * (ray.position.x - start.x))
-        / (edge.x * ray.direction.y - edge.y * ray.direction.x);
-    // T1 = (s_px+s_dx*T2-r_px)/r_dx
-    let t1 = (start.x + edge.x * t2 - ray.position.x) / ray.direction.x;
-
-    if 0.0 < t1 && 0.0 <= t2 && t2 <= 1.0 {
-        Some(Point2::new(
-            ray.position.x + ray.direction.x * t1,
-            ray.position.y + ray.direction.y * t1,
-        ))
-    } else {
-        None
-    }
-}
-
-/// A ray-line segment intersection algorithm.
 ///
 /// Based on:
 ///
 /// https://stackoverflow.com/questions/14307158/how-do-you-check-for-intersection-between-a-line-segment-and-a-line-ray-emanatin
 ///
 /// https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
-fn line_intersection_v2(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
+fn line_intersection(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
     let p = ray.position;
     let q = v1;
     let r = ray.direction.into_inner();
@@ -128,39 +98,8 @@ fn line_intersection_v2(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<P
     }
 }
 
-/// A ray-line segment intersection algorithm.
-///
-/// Based on:
-///
-/// https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line
-fn _line_intersection_v3(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
-    let r1 = ray.position;
-    let r2 = ray.position + ray.direction.into_inner();
-
-    let denom = (r1.x - r2.x) * (v1.y - v2.y) - (r1.y - r2.y) * (v1.x - v2.x);
-    if denom == 0.0 {
-        return None;
-    }
-
-    let t = ((r1.x - v1.x) * (v1.y - v2.y) - (r1.y - v1.y) * (v1.x - v2.x)) / denom;
-    if t < 0.0 {
-        return None;
-    }
-
-    let u = ((r1.x - r2.x) * (r1.y - v1.y) - (r1.y - r2.y) * (r1.x - v1.x)) / denom;
-    if u < 0.0 || 1.0 < u {
-        return None;
-    }
-
-    Some(r1 + (r2 - r1) * t)
-}
-
 fn cross(v: Vector2<f32>, w: Vector2<f32>) -> f32 {
     v.x * w.y - v.y * w.x
-}
-
-fn get_rotation_matrix(theta: f32) -> Matrix2<f32> {
-    Matrix2::new(theta.cos(), -theta.sin(), theta.sin(), theta.cos())
 }
 
 #[cfg(test)]
