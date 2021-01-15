@@ -208,29 +208,7 @@ fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Point2<
 
     for polygon in polygons {
         for (v1, v2) in polygon.edge_iter() {
-            if let Some(point) = line_intersection_v1(ray, v1, v2) {
-                let new_dist = distance(&point, &ray.position);
-                if new_dist < closest_point_dist {
-                    closest_point = Some(point);
-                    closest_point_dist = new_dist;
-                }
-            } else if let Some(point) = line_intersection_v2(
-                ray.position,
-                ray.position + ray.direction.into_inner(),
-                v1,
-                v2,
-            ) {
-                let new_dist = distance(&point, &ray.position);
-                if new_dist < closest_point_dist {
-                    closest_point = Some(point);
-                    closest_point_dist = new_dist;
-                }
-            } else if let Some(point) = line_intersection_v3(
-                ray.position,
-                ray.position + ray.direction.into_inner(),
-                v1,
-                v2,
-            ) {
+            if let Some(point) = line_intersection(ray, v1, v2) {
                 let new_dist = distance(&point, &ray.position);
                 if new_dist < closest_point_dist {
                     closest_point = Some(point);
@@ -248,9 +226,10 @@ fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Point2<
 }
 
 fn line_intersection(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
-    if ray.position.x > 0.0 {
-        line_intersection_v1(ray, v1, v2)
-    }
+    let _x = line_intersection_v1(ray, v1, v2);
+    let _y = line_intersection_v2(ray, v1, v2);
+    let _z = line_intersection_v3(ray, v1, v2);
+    _z
 }
 
 fn line_intersection_v1(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
@@ -286,71 +265,62 @@ fn line_intersection_v1(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<P
     }
 }
 
-fn line_intersection_v2(
-    v1: Point2<f32>,
-    v2: Point2<f32>,
-    w1: Point2<f32>,
-    w2: Point2<f32>,
-) -> Option<Point2<f32>> {
+fn line_intersection_v2(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
     // https://stackoverflow.com/questions/14307158/how-do-you-check-for-intersection-between-a-line-segment-and-a-line-ray-emanatin
     // https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
 
-    let p = v1;
-    let q = w1;
-    let r = v2 - v1;
-    let s = w2 - w1;
+    let p = ray.position;
+    let q = v1;
+    let r = ray.direction.into_inner();
+    let s = v2 - v1;
 
     let cross_r_s = cross(r, s);
     let cross_q_sub_p_r = cross(q - p, r);
 
-    match (cross_r_s, cross_q_sub_p_r) {
-        (0.0, 0.0) => {
+    if cross_r_s == 0.0 {
+        if cross_q_sub_p_r == 0.0 {
             // Lines are collinear
             // t0 = (q − p) · r / (r · r)
             // t1 = (q + s − p) · r / (r · r) = t0 + s · r / (r · r)
             None
-        }
-        (0.0, _) => {
+        } else {
             // Lines are parallel
             None
         }
-        _ => {
-            // t = (q − p) × s / (r × s) maybe not interested in this
-            // u = (q − p) × r / (r × s)
-            // if 0 <= u <= 1, then intersect at q + u * s
-            let u = cross_q_sub_p_r / cross(r, s);
-            if 0.0 <= u && u <= 1.0 {
-                Some(q + u * s)
-            } else {
-                None
-            }
+    } else {
+        // t = (q − p) × s / (r × s) maybe not interested in this
+        // u = (q − p) × r / (r × s)
+        // if 0 <= u <= 1, then intersect at q + u * s
+        let u = cross_q_sub_p_r / cross(r, s);
+        if 0.0 <= u && u <= 1.0 {
+            Some(q + u * s)
+        } else {
+            None
         }
     }
 }
 
-fn line_intersection_v3(
-    v1: Point2<f32>,
-    v2: Point2<f32>,
-    w1: Point2<f32>,
-    w2: Point2<f32>,
-) -> Option<Point2<f32>> {
+fn line_intersection_v3(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
     // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line
-    let denom = (v1.x - v2.x) * (w1.y - w2.y) - (v1.y - v2.y) * (w1.x - w2.x);
+    let r1 = ray.position;
+    let r2 = ray.position + ray.direction.into_inner();
+
+    let denom = (r1.x - r2.x) * (v1.y - v2.y) - (r1.y - r2.y) * (v1.x - v2.x);
     if denom == 0.0 {
         return None;
     }
 
-    let t = ((v1.x - w1.x) * (w1.y - w2.y) - (v1.y - w1.y) * (w1.x - w2.x)) / denom;
+    let t = ((r1.x - v1.x) * (v1.y - v2.y) - (r1.y - v1.y) * (v1.x - v2.x)) / denom;
     if t < 0.0 {
         return None;
     }
 
-    let u = ((v1.x - v2.x) * (v1.y - w1.y) - (v1.y - v2.y) * (v1.x - w1.x)) / denom;
+    let u = ((r1.x - r2.x) * (r1.y - v1.y) - (r1.y - r2.y) * (r1.x - v1.x)) / denom;
     if u < 0.0 || 1.0 < u {
         return None;
     }
 
-    Some(v1 + (v2 - v1) * t)
+    Some(r1 + (r2 - r1) * t)
 }
 
 fn cross(v: Vector2<f32>, w: Vector2<f32>) -> f32 {
