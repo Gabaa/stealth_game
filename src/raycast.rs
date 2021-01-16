@@ -107,6 +107,11 @@ mod raycast_tests {
     use super::{raycast, Point2, Polygon, Ray, Unit, Vector2};
 
     #[test]
+    fn numbers() {
+        assert!(360.0_f32.to_radians() - 2.0 * std::f32::consts::PI <= std::f32::EPSILON);
+    }
+
+    #[test]
     fn hit_nothing() {
         let pos = Point2::new(0.0, 0.0);
         let dir = Vector2::new(1.0, 0.0);

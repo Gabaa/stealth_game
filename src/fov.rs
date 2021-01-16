@@ -2,7 +2,7 @@ use crate::game_map::GameMap;
 use crate::nalgebra::{Point2, Unit, Vector2};
 use crate::polygon::Polygon;
 use crate::raycast::{raycast, Ray};
-use std::cmp::Ordering;
+use std::{cmp::Ordering, f32};
 
 pub trait FieldOfView {
     fn get_visible_area(&self) -> &Polygon;
@@ -48,7 +48,11 @@ impl FieldOfView for ConeFieldOfView {
         actor_direction: Unit<Vector2<f32>>,
         game_map: &GameMap,
     ) {
-        let mut new_verts: Vec<Point2<f32>> = vec![actor_pos];
+        let mut new_verts: Vec<Point2<f32>> = vec![];
+
+        if self.view_angle < f32::consts::PI {
+            new_verts.push(actor_pos);
+        }
 
         // Shoot a ray straight forward
         let ray = Ray::new(actor_pos, actor_direction);
@@ -109,67 +113,6 @@ impl FieldOfView for ConeFieldOfView {
                 Some(ord) => ord,
                 None => panic!("Cannot sort the FOV verts, {} and {}", a, b),
             }
-        });
-
-        self.visible_area = Polygon::new(new_verts);
-    }
-}
-
-pub struct GlobalFieldOfView {
-    visible_area: Polygon,
-}
-
-impl GlobalFieldOfView {
-    pub fn new() -> Self {
-        GlobalFieldOfView {
-            visible_area: Polygon::new(vec![
-                Point2::new(0.0, 0.0),
-                Point2::new(800.0, 0.0),
-                Point2::new(800.0, 600.0),
-                Point2::new(0.0, 600.0),
-            ]),
-        }
-    }
-}
-
-impl FieldOfView for GlobalFieldOfView {
-    fn get_visible_area(&self) -> &Polygon {
-        &self.visible_area
-    }
-
-    fn recalculate(
-        &mut self,
-        position: Point2<f32>,
-        _direction: Unit<Vector2<f32>>,
-        game_map: &GameMap,
-    ) {
-        let mut new_verts: Vec<Point2<f32>> = vec![];
-
-        for obstacle in &game_map.obstacles {
-            for vert in &obstacle.verts {
-                let direction = vert - position;
-
-                let ray = Ray::new(position, Unit::new_normalize(direction));
-                if let Some(point) = raycast(&ray, &game_map.obstacles, 0.0) {
-                    new_verts.push(point);
-                };
-
-                let cw_rot_ray = ray.rotate(0.001);
-                if let Some(point) = raycast(&cw_rot_ray, &game_map.obstacles, 0.0) {
-                    new_verts.push(point);
-                };
-
-                let ccw_rot_ray = ray.rotate(-0.001);
-                if let Some(point) = raycast(&ccw_rot_ray, &game_map.obstacles, 0.0) {
-                    new_verts.push(point);
-                };
-            }
-        }
-
-        new_verts.sort_by(|a, b| {
-            let a_angle = signed_angle(a - position, Vector2::new(1.0, 0.0));
-            let b_angle = signed_angle(b - position, Vector2::new(1.0, 0.0));
-            a_angle.partial_cmp(&b_angle).unwrap()
         });
 
         self.visible_area = Polygon::new(new_verts);

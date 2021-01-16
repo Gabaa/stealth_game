@@ -1,6 +1,6 @@
+use crate::fov::FieldOfView;
+use crate::game_map::GameMap;
 use crate::nalgebra::{Point2, Unit, Vector2};
-use crate::FieldOfView;
-use crate::GameMap;
 
 pub struct Actor {
     pub pos: Point2<f32>,

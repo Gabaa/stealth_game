@@ -11,7 +11,7 @@ mod raycast;
 use actor::Actor;
 use collision_handling::apply_physics_movement;
 use drawing::draw_all;
-use fov::{ConeFieldOfView, FieldOfView};
+use fov::ConeFieldOfView;
 use game_map::GameMap;
 use ggez::*;
 use input_handling::handle_keyboard_input;
@@ -48,7 +48,7 @@ pub struct State {
 impl State {
     fn new() -> Self {
         State {
-            player: Actor::new(30.0, 40.0, Box::new(ConeFieldOfView::new(135.0, 300.0))),
+            player: Actor::new(30.0, 40.0, Box::new(ConeFieldOfView::new(360.0, 200.0))),
             guards: vec![Actor::new(
                 600.0,
                 50.0,
