@@ -1,19 +1,31 @@
 use crate::actor::Actor;
+use crate::controller::Controller;
+use crate::game_map::GameMap;
 use crate::nalgebra::{distance, Point2, Unit, Vector2};
 use crate::polygon::Polygon;
-use crate::State;
+use crate::state::State;
+use ggez::Context;
 
-pub fn apply_physics_movement(state: &mut State, delta: Vector2<f32>) {
-    let next_pos = &mut (state.player.pos + delta);
-    if delta.magnitude() > 0.0 {
-        state.player.direction = Unit::new_normalize(delta);
+pub fn apply_physics_movement(state: &mut State, ctx: &Context) {
+    for actor in &mut state.actors {
+        let delta = actor.get_next_movement(ctx);
+
+        let next_pos = &mut (actor.pos + delta);
+        if delta.magnitude() > 0.0 {
+            actor.direction = Unit::new_normalize(delta);
+        }
+
+        handle_obstacle_collisions(&state.game_map, actor, next_pos);
+
+        if let Controller::Player() = actor.controller {
+            state.player_won = did_player_win(&state.game_map, &actor, *next_pos);
+        }
+
+        actor.pos = *next_pos;
     }
-    handle_obstacle_collisions(state, next_pos);
-    handle_end_area_intersection(state, *next_pos);
-    state.player.pos = *next_pos;
 }
 
-fn handle_obstacle_collisions(state: &mut State, next_pos: &mut Point2<f32>) {
+fn handle_obstacle_collisions(game_map: &GameMap, actor: &mut Actor, next_pos: &mut Point2<f32>) {
     // TODO: Find out if there is a better way than... whatever this is.
     let mut iterations = 0;
 
@@ -21,8 +33,8 @@ fn handle_obstacle_collisions(state: &mut State, next_pos: &mut Point2<f32>) {
         iterations += 1;
 
         let mut changed = false;
-        for obstacle in &state.game_map.obstacles {
-            changed |= move_out_of_obstacle(obstacle, &state.player, next_pos);
+        for obstacle in &game_map.obstacles {
+            changed |= move_out_of_obstacle(obstacle, actor, next_pos);
         }
 
         if iterations == 100 || !changed {
@@ -72,18 +84,17 @@ fn get_closest_point(a: Point2<f32>, b: Point2<f32>, p: Point2<f32>) -> Point2<f
     a + ab * t
 }
 
-fn handle_end_area_intersection(state: &mut State, next_pos: Point2<f32>) {
-    let end_area = &state.game_map.end_area;
+fn did_player_win(game_map: &GameMap, player: &Actor, next_pos: Point2<f32>) -> bool {
+    let end_area = &game_map.end_area;
 
-    let n = end_area.verts.len();
-    for i in 0..n {
-        let a = end_area.verts[i];
-        let b = end_area.verts[(i + 1) % n];
+    for (a, b) in end_area.edge_iter() {
         let closest_point = get_closest_point(a, b, next_pos);
 
         let dist = distance(&closest_point, &next_pos);
-        if dist < state.player.radius {
-            state.player_won = true;
+        if dist < player.radius {
+            return true;
         }
     }
+
+    false
 }

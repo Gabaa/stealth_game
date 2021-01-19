@@ -56,20 +56,19 @@ pub fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Poi
 ///
 /// https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
 fn line_intersection(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Point2<f32>> {
-    let p = ray.position;
-    let q = v1;
-    let r = ray.direction.into_inner();
-    let s = v2 - v1;
+    let ray_direction = ray.direction.into_inner();
+    let edge = v2 - v1;
 
-    if cross(r, s) == 0.0 {
-        if cross(q - p, r) == 0.0 {
+    if cross(ray_direction, edge) == 0.0 {
+        if cross(v1 - ray.position, ray_direction) == 0.0 {
             // Lines are collinear
             // t0 = (q − p) · r / (r · r)
-            let mut t0 = (q - p).dot(&r) / r.dot(&r);
+            let mut t0 =
+                (v1 - ray.position).dot(&ray_direction) / ray_direction.dot(&ray_direction);
             // t1 = (q + s − p) · r / (r · r) = t0 + s · r / (r · r)
-            let mut t1 = t0 + s.dot(&r) / r.dot(&r);
+            let mut t1 = t0 + edge.dot(&ray_direction) / ray_direction.dot(&ray_direction);
 
-            if s.dot(&r) < 0.0 {
+            if edge.dot(&ray_direction) < 0.0 {
                 std::mem::swap(&mut t0, &mut t1)
             }
 
@@ -86,12 +85,12 @@ fn line_intersection(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Poin
         }
     } else {
         // t = (q − p) × s / (r × s)
-        let t = cross(q - p, s) / cross(r, s);
+        let t = cross(v1 - ray.position, edge) / cross(ray_direction, edge);
         // u = (q − p) × r / (r × s)
-        let u = cross(q - p, r) / cross(r, s);
+        let u = cross(v1 - ray.position, ray_direction) / cross(ray_direction, edge);
 
         if 0.0 <= u && u <= 1.0 && 0.0 <= t {
-            Some(q + u * s)
+            Some(v1 + u * edge)
         } else {
             None
         }

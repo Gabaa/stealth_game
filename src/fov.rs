@@ -5,7 +5,7 @@ use crate::raycast::{raycast, Ray};
 use std::{cmp::Ordering, f32};
 
 pub trait FieldOfView {
-    fn get_visible_area(&self) -> &Polygon;
+    fn get_visible_area(&self) -> Option<&Polygon>;
     fn recalculate(
         &mut self,
         position: Point2<f32>,
@@ -38,8 +38,8 @@ fn raycast_hit_or_max_dist(ray: &Ray, obstacles: &[Polygon], max_distance: f32) 
 }
 
 impl FieldOfView for ConeFieldOfView {
-    fn get_visible_area(&self) -> &Polygon {
-        &self.visible_area
+    fn get_visible_area(&self) -> Option<&Polygon> {
+        Some(&self.visible_area)
     }
 
     fn recalculate(
@@ -93,12 +93,12 @@ impl FieldOfView for ConeFieldOfView {
                     new_verts.push(point);
                 };
 
-                let cw_rot_ray = ray.rotate(0.001);
+                let cw_rot_ray = ray.rotate(0.01);
                 if let Some(point) = raycast(&cw_rot_ray, &game_map.obstacles, self.view_distance) {
                     new_verts.push(point);
                 };
 
-                let ccw_rot_ray = ray.rotate(-0.001);
+                let ccw_rot_ray = ray.rotate(-0.01);
                 if let Some(point) = raycast(&ccw_rot_ray, &game_map.obstacles, self.view_distance)
                 {
                     new_verts.push(point);
@@ -124,4 +124,20 @@ fn signed_angle(v1: Vector2<f32>, v2: Vector2<f32>) -> f32 {
     let a_det = v2.x * v1.y - v2.y * v1.x;
 
     a_dot.atan2(a_det)
+}
+
+pub struct NoFieldOfView {}
+
+impl FieldOfView for NoFieldOfView {
+    fn get_visible_area(&self) -> Option<&Polygon> {
+        None
+    }
+
+    fn recalculate(
+        &mut self,
+        _position: Point2<f32>,
+        _direction: Unit<Vector2<f32>>,
+        _game_map: &GameMap,
+    ) {
+    }
 }

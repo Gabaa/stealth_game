@@ -1,37 +1,39 @@
-use crate::{actor::Actor, colors, fov::FieldOfView, game_map::GameMap, State};
+use crate::{actor::Actor, colors, fov::FieldOfView, game_map::GameMap, state::State};
 use ggez::{graphics, Context, GameResult};
 
 pub fn draw_all(ctx: &mut Context, state: &State) -> GameResult<()> {
     // TODO: These should re-use the meshes instead of remaking each time
-    draw_all_fov(ctx, &state.player, &state.guards)?;
+    draw_all_fov(ctx, &state.actors)?;
     draw_obstacles(ctx, &state.game_map)?;
     draw_end_area(ctx, &state.game_map)?;
-    draw_actors(ctx, &state.player, &state.guards)
+    draw_actors(ctx, &state.actors)
 }
 
-fn draw_all_fov(ctx: &mut Context, player: &Actor, guards: &[Actor]) -> GameResult<()> {
-    for guard in guards {
-        draw_fov(ctx, &guard.fov, colors::GUARD_VISIBLE_AREA)?;
+fn draw_all_fov(ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
+    for actor in actors {
+        let color = if actor.is_player() {
+            colors::PLAYER_VISIBLE_AREA
+        } else {
+            colors::GUARD_VISIBLE_AREA
+        };
+        draw_fov(ctx, &*actor.fov, color)?;
     }
 
-    draw_fov(ctx, &player.fov, colors::PLAYER_VISIBLE_AREA)
+    Ok(())
 }
 
-fn draw_fov(
-    ctx: &mut Context,
-    fov: &Box<dyn FieldOfView>,
-    color: graphics::Color,
-) -> GameResult<()> {
-    if fov.get_visible_area().verts.len() < 3 {
+fn draw_fov(ctx: &mut Context, fov: &dyn FieldOfView, color: graphics::Color) -> GameResult<()> {
+    let visible_area = match fov.get_visible_area() {
+        Some(polygon) => polygon,
+        None => return Ok(()),
+    };
+
+    if visible_area.verts.len() < 3 {
         return Ok(());
     }
 
-    let mesh = graphics::Mesh::new_polygon(
-        ctx,
-        graphics::DrawMode::fill(),
-        &fov.get_visible_area().verts,
-        color,
-    )?;
+    let mesh =
+        graphics::Mesh::new_polygon(ctx, graphics::DrawMode::fill(), &visible_area.verts, color)?;
 
     graphics::draw(ctx, &mesh, graphics::DrawParam::default())
 }
@@ -62,12 +64,12 @@ fn draw_end_area(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
     graphics::draw(ctx, &mesh, graphics::DrawParam::default())
 }
 
-fn draw_actors(ctx: &mut Context, player: &Actor, guards: &[Actor]) -> GameResult<()> {
-    for guard in guards {
-        draw_actor(ctx, guard)?;
+fn draw_actors(ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
+    for actor in actors {
+        draw_actor(ctx, actor)?;
     }
 
-    draw_actor(ctx, player)
+    Ok(())
 }
 
 fn draw_actor(ctx: &mut Context, actor: &Actor) -> GameResult<()> {

@@ -32,10 +32,10 @@ impl GameMap {
         ];
 
         let end_area = Polygon::new(vec![
-            Point2::new(600.0, 400.0),
-            Point2::new(800.0, 400.0),
+            Point2::new(700.0, 500.0),
+            Point2::new(800.0, 500.0),
             Point2::new(800.0, 600.0),
-            Point2::new(600.0, 600.0),
+            Point2::new(700.0, 600.0),
         ]);
 
         GameMap {
