@@ -13,7 +13,6 @@ pub struct State {
     pub actors: Vec<Actor>,
     pub game_map: GameMap,
     pub player_won: bool,
-    pub player_found: bool,
 }
 
 impl State {
@@ -25,12 +24,12 @@ impl State {
                     40.0,
                     Box::new(NoFieldOfView {}),
                     Controller::Player(),
-                    2.0,
+                    1.2,
                 ),
                 Actor::new(
                     600.0,
                     50.0,
-                    Box::new(ConeFieldOfView::new(90.0, 200.0)),
+                    Box::new(ConeFieldOfView::new(90.0, 300.0)),
                     Controller::Guard(Patrol {
                         points: vec![
                             Point2::new(604.0, 96.0),
@@ -41,12 +40,11 @@ impl State {
                         ],
                         i: 0,
                     }),
-                    2.0,
+                    1.3,
                 ),
             ],
             game_map: GameMap::new(),
             player_won: false,
-            player_found: false,
         }
     }
 }
@@ -78,19 +76,46 @@ impl event::EventHandler for State {
 }
 
 fn tick(ctx: &mut Context, state: &mut State) {
+    apply_physics_movement(state, ctx);
+
     if state.player_won {
         println!("You won!");
         event::quit(ctx);
     }
 
-    if state.player_found {
+    if was_player_found(&state) {
         println!("Player was discovered...");
         event::quit(ctx);
     }
 
-    apply_physics_movement(state, ctx);
-
     for actor in &mut state.actors {
         actor.update_fov(&state.game_map);
+    }
+}
+
+fn was_player_found(state: &State) -> bool {
+    let mut player_pos_opt = None;
+
+    for actor in &state.actors {
+        if actor.is_player() {
+            player_pos_opt = Some(actor.pos);
+            break;
+        }
+    }
+
+    match player_pos_opt {
+        Some(player_pos) => {
+            let mut found = false;
+
+            for actor in &state.actors {
+                if actor.is_player() {
+                    continue;
+                }
+                found |= actor.fov.is_inside_fov(actor, &state.game_map, player_pos)
+            }
+
+            found
+        }
+        None => false,
     }
 }

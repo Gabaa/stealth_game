@@ -1,7 +1,10 @@
-use crate::game_map::GameMap;
-use crate::nalgebra::{Point2, Unit, Vector2};
-use crate::polygon::Polygon;
-use crate::raycast::{raycast, Ray};
+use crate::{
+    actor::Actor,
+    game_map::GameMap,
+    nalgebra::{distance, Point2, Unit, Vector2},
+    polygon::Polygon,
+    raycast::{raycast, Ray},
+};
 use std::{cmp::Ordering, f32};
 
 pub trait FieldOfView {
@@ -12,6 +15,7 @@ pub trait FieldOfView {
         direction: Unit<Vector2<f32>>,
         game_map: &GameMap,
     );
+    fn is_inside_fov(&self, actor: &Actor, game_map: &GameMap, point: Point2<f32>) -> bool;
 }
 
 pub struct ConeFieldOfView {
@@ -117,6 +121,24 @@ impl FieldOfView for ConeFieldOfView {
 
         self.visible_area = Polygon::new(new_verts);
     }
+
+    fn is_inside_fov(&self, actor: &Actor, game_map: &GameMap, point: Point2<f32>) -> bool {
+        let direction_to_point = point - actor.pos;
+        let angle = direction_to_point.angle(&actor.direction);
+        if angle > (self.view_angle / 2.0) {
+            return false;
+        }
+
+        let dist = distance(&actor.pos, &point);
+        if dist > self.view_distance {
+            return false;
+        }
+
+        let ray = Ray::new(actor.pos, Unit::new_normalize(direction_to_point));
+        let hit = raycast(&ray, &game_map.obstacles, dist);
+
+        hit.is_none()
+    }
 }
 
 fn signed_angle(v1: Vector2<f32>, v2: Vector2<f32>) -> f32 {
@@ -139,5 +161,9 @@ impl FieldOfView for NoFieldOfView {
         _direction: Unit<Vector2<f32>>,
         _game_map: &GameMap,
     ) {
+    }
+
+    fn is_inside_fov(&self, _actor: &Actor, _game_map: &GameMap, _point: Point2<f32>) -> bool {
+        false
     }
 }
