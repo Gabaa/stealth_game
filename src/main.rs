@@ -13,8 +13,6 @@ use ggez::*;
 use state::State;
 
 fn main() {
-    let mut state = State::new();
-
     let conf = conf::Conf {
         window_mode: conf::WindowMode::default(),
         window_setup: conf::WindowSetup::default().title("Stealth Game!!!"),
@@ -26,6 +24,8 @@ fn main() {
         .conf(conf)
         .build()
         .unwrap();
+
+    let mut state = State::new(ctx).unwrap();
 
     match event::run(ctx, event_loop, &mut state) {
         Ok(_) => println!("Exited cleanly."),
