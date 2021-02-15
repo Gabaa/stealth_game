@@ -1,15 +1,12 @@
-use {
-    crate::{
-        controller::Controller,
-        fov::FieldOfView,
-        game_map::GameMap,
-        nalgebra::{distance, Point2, Unit, Vector2},
-    },
-    ggez::{
-        graphics,
-        input::keyboard::{is_key_pressed, KeyCode},
-        Context, GameResult,
-    },
+use crate::{
+    controller::Controller,
+    fov::FieldOfView,
+    game_map::GameMap,
+    nalgebra::{distance, Point2, Unit, Vector2},
+};
+use ggez::{
+    input::keyboard::{is_key_pressed, KeyCode},
+    Context,
 };
 
 pub struct Actor {
@@ -19,37 +16,24 @@ pub struct Actor {
     pub fov: Box<dyn FieldOfView>,
     pub controller: Controller,
     pub move_speed: f32,
-    mesh: graphics::Mesh,
 }
 
 impl Actor {
     pub fn new(
-        pos: Point2<f32>,
+        x: f32,
+        y: f32,
         fov: Box<dyn FieldOfView>,
         controller: Controller,
         move_speed: f32,
-        ctx: &mut Context,
-    ) -> GameResult<Self> {
-        let radius = 25.0;
-
-        let mesh = graphics::Mesh::new_circle(
-            ctx,
-            graphics::DrawMode::fill(),
-            [0.0, 0.0],
-            radius,
-            0.5,
-            graphics::WHITE,
-        )?;
-
-        Ok(Actor {
-            pos,
-            radius,
+    ) -> Self {
+        Actor {
+            pos: Point2::new(x, y),
+            radius: 25.0,
             direction: Unit::new_normalize(Vector2::new(1.0, 0.0)),
             fov,
             controller,
             move_speed,
-            mesh,
-        })
+        }
     }
 
     pub fn is_player(&self) -> bool {
@@ -106,14 +90,6 @@ impl Actor {
 
     pub fn update_fov(&mut self, game_map: &GameMap) {
         self.fov.recalculate(self.pos, self.direction, game_map)
-    }
-
-    pub fn draw(&self, ctx: &mut Context) -> GameResult<()> {
-        graphics::draw(
-            ctx,
-            &self.mesh,
-            graphics::DrawParam::default().dest(self.pos),
-        )
     }
 }
 

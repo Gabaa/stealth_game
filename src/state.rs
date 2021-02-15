@@ -16,37 +16,36 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(ctx: &mut Context) -> GameResult<Self> {
-        let player = Actor::new(
-            Point2::new(30.0, 40.0),
-            Box::new(NoFieldOfView {}),
-            Controller::Player(),
-            1.2,
-            ctx,
-        )?;
-
-        let guard = Actor::new(
-            Point2::new(600.0, 50.0),
-            Box::new(ConeFieldOfView::new(90.0, 300.0)),
-            Controller::Guard(Patrol {
-                points: vec![
-                    Point2::new(604.0, 96.0),
-                    Point2::new(279.0, 72.0),
-                    Point2::new(65.0, 345.0),
-                    Point2::new(326.0, 511.0),
-                    Point2::new(659.0, 357.0),
-                ],
-                i: 0,
-            }),
-            1.3,
-            ctx,
-        )?;
-
-        Ok(State {
-            actors: vec![player, guard],
+    pub fn new() -> Self {
+        State {
+            actors: vec![
+                Actor::new(
+                    30.0,
+                    40.0,
+                    Box::new(NoFieldOfView {}),
+                    Controller::Player(),
+                    1.2,
+                ),
+                Actor::new(
+                    600.0,
+                    50.0,
+                    Box::new(ConeFieldOfView::new(90.0, 300.0)),
+                    Controller::Guard(Patrol {
+                        points: vec![
+                            Point2::new(604.0, 96.0),
+                            Point2::new(279.0, 72.0),
+                            Point2::new(65.0, 345.0),
+                            Point2::new(326.0, 511.0),
+                            Point2::new(659.0, 357.0),
+                        ],
+                        i: 0,
+                    }),
+                    1.3,
+                ),
+            ],
             game_map: GameMap::new(),
             player_won: false,
-        })
+        }
     }
 }
 

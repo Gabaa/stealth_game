@@ -6,13 +6,7 @@ pub fn draw_all(ctx: &mut Context, state: &State) -> GameResult<()> {
     draw_all_fov(ctx, &state.actors)?;
     draw_obstacles(ctx, &state.game_map)?;
     draw_end_area(ctx, &state.game_map)?;
-
-    // Draw all actors
-    for actor in &state.actors {
-        actor.draw(ctx)?;
-    }
-
-    Ok(())
+    draw_actors(ctx, &state.actors)
 }
 
 fn draw_all_fov(ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
@@ -65,6 +59,27 @@ fn draw_end_area(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
         graphics::DrawMode::fill(),
         &game_map.end_area.verts,
         colors::END_AREA,
+    )?;
+
+    graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+}
+
+fn draw_actors(ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
+    for actor in actors {
+        draw_actor(ctx, actor)?;
+    }
+
+    Ok(())
+}
+
+fn draw_actor(ctx: &mut Context, actor: &Actor) -> GameResult<()> {
+    let mesh = graphics::Mesh::new_circle(
+        ctx,
+        graphics::DrawMode::fill(),
+        [actor.pos.x, actor.pos.y],
+        actor.radius,
+        0.5,
+        graphics::WHITE,
     )?;
 
     graphics::draw(ctx, &mesh, graphics::DrawParam::default())
