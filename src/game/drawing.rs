@@ -4,15 +4,11 @@ use {
 };
 
 pub fn draw_all(ctx: &mut Context, game: &Game) -> GameResult<()> {
-    graphics::clear(ctx, graphics::BLACK);
-
     // TODO: These should re-use the meshes instead of remaking each time
     draw_all_fov(ctx, &game.actors)?;
     draw_obstacles(ctx, &game.game_map)?;
     draw_end_area(ctx, &game.game_map)?;
-    draw_actors(ctx, &game.actors)?;
-
-    graphics::present(ctx)
+    draw_actors(ctx, &game.actors)
 }
 
 fn draw_all_fov(ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {

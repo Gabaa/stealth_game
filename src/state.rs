@@ -1,6 +1,6 @@
 use {
-    crate::frame::{Frame, GameFrame},
-    ggez::{event, input::mouse::MouseButton, timer, Context, GameError, GameResult},
+    crate::frame::{Frame, GameFrame, MainMenuFrame},
+    ggez::{event, graphics, input::mouse::MouseButton, timer, Context, GameError, GameResult},
 };
 
 pub struct State {
@@ -10,7 +10,7 @@ pub struct State {
 impl State {
     pub fn new() -> Self {
         State {
-            frame_stack: vec![Box::new(GameFrame::new())],
+            frame_stack: vec![Box::new(MainMenuFrame {})],
         }
     }
 }
@@ -28,10 +28,14 @@ impl event::EventHandler for State {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
+
         match self.frame_stack.last() {
             Some(frame) => frame.draw(ctx),
             None => Err(GameError::EventLoopError("No frame".to_owned())),
-        }
+        }?;
+
+        graphics::present(ctx)
     }
 
     fn mouse_button_down_event(
@@ -41,6 +45,7 @@ impl event::EventHandler for State {
         x: f32,
         y: f32,
     ) {
-        println!("{}, {}", x, y)
+        self.frame_stack.push(Box::new(GameFrame::new()));
+        // println!("{}, {}", x, y)
     }
 }
