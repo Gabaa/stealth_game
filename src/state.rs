@@ -1,29 +1,37 @@
 use {
-    crate::game::Game,
-    ggez::{event, input::mouse::MouseButton, timer, Context, GameResult},
+    crate::frame::{Frame, GameFrame},
+    ggez::{event, input::mouse::MouseButton, timer, Context, GameError, GameResult},
 };
 
 pub struct State {
-    game: Game,
+    frame_stack: Vec<Box<dyn Frame>>,
 }
 
 impl State {
     pub fn new() -> Self {
-        State { game: Game::new() }
+        State {
+            frame_stack: vec![Box::new(GameFrame::new())],
+        }
     }
 }
 
 impl event::EventHandler for State {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         while timer::check_update_time(ctx, 60) {
-            self.game.tick(ctx);
+            match self.frame_stack.last_mut() {
+                Some(frame) => (*frame).tick(ctx),
+                None => return Err(GameError::EventLoopError("No frame".to_owned())),
+            }
         }
 
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.game.draw(ctx)
+        match self.frame_stack.last() {
+            Some(frame) => frame.draw(ctx),
+            None => Err(GameError::EventLoopError("No frame".to_owned())),
+        }
     }
 
     fn mouse_button_down_event(
