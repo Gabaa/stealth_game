@@ -1,13 +1,13 @@
-use crate::actor::Actor;
-use crate::controller::Controller;
-use crate::game_map::GameMap;
-use crate::nalgebra::{distance, Point2, Unit, Vector2};
-use crate::polygon::Polygon;
-use crate::state::State;
-use ggez::Context;
+use {
+    crate::{
+        game::{actor::Actor, controller::Controller, game_map::GameMap, polygon::Polygon, Game},
+        nalgebra::{distance, Point2, Unit, Vector2},
+    },
+    ggez::Context,
+};
 
-pub fn apply_physics_movement(state: &mut State, ctx: &Context) {
-    for actor in &mut state.actors {
+pub fn apply_physics_movement(game: &mut Game, ctx: &Context) {
+    for actor in &mut game.actors {
         let delta = actor.get_next_movement(ctx);
 
         let next_pos = &mut (actor.pos + delta);
@@ -15,10 +15,10 @@ pub fn apply_physics_movement(state: &mut State, ctx: &Context) {
             actor.direction = Unit::new_normalize(delta);
         }
 
-        handle_obstacle_collisions(&state.game_map, actor, next_pos);
+        handle_obstacle_collisions(&game.game_map, actor, next_pos);
 
         if let Controller::Player() = actor.controller {
-            state.player_won = did_player_win(&state.game_map, &actor, *next_pos);
+            game.player_won = did_player_win(&game.game_map, &actor, *next_pos);
         }
 
         actor.pos = *next_pos;

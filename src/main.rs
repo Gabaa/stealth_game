@@ -1,12 +1,4 @@
-mod actor;
-mod collision_handling;
-mod colors;
-mod controller;
-mod drawing;
-mod fov;
-mod game_map;
-mod polygon;
-mod raycast;
+mod game;
 mod state;
 
 use ggez::*;

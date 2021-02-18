@@ -1,5 +1,4 @@
-use crate::nalgebra::Point2;
-use crate::polygon::Polygon;
+use crate::{game::polygon::Polygon, nalgebra::Point2};
 
 pub struct GameMap {
     pub obstacles: Vec<Polygon>,

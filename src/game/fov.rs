@@ -1,11 +1,15 @@
-use crate::{
-    actor::Actor,
-    game_map::GameMap,
-    nalgebra::{distance, Point2, Unit, Vector2},
-    polygon::Polygon,
-    raycast::{raycast, Ray},
+use {
+    crate::{
+        game::{
+            actor::Actor,
+            game_map::GameMap,
+            polygon::Polygon,
+            raycast::{raycast, Ray},
+        },
+        nalgebra::{distance, Point2, Unit, Vector2},
+    },
+    std::{cmp::Ordering, f32},
 };
-use std::{cmp::Ordering, f32};
 
 pub trait FieldOfView {
     fn get_visible_area(&self) -> Option<&Polygon>;

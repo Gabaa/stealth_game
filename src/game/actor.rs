@@ -1,12 +1,12 @@
-use crate::{
-    controller::Controller,
-    fov::FieldOfView,
-    game_map::GameMap,
-    nalgebra::{distance, Point2, Unit, Vector2},
-};
-use ggez::{
-    input::keyboard::{is_key_pressed, KeyCode},
-    Context,
+use {
+    crate::{
+        game::{controller::Controller, fov::FieldOfView, game_map::GameMap},
+        nalgebra::{distance, Point2, Unit, Vector2},
+    },
+    ggez::{
+        input::keyboard::{is_key_pressed, KeyCode},
+        Context,
+    },
 };
 
 pub struct Actor {

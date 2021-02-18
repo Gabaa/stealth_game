@@ -1,12 +1,18 @@
-use crate::{actor::Actor, colors, fov::FieldOfView, game_map::GameMap, state::State};
-use ggez::{graphics, Context, GameResult};
+use {
+    crate::game::{actor::Actor, colors, fov::FieldOfView, game_map::GameMap, Game},
+    ggez::{graphics, Context, GameResult},
+};
 
-pub fn draw_all(ctx: &mut Context, state: &State) -> GameResult<()> {
+pub fn draw_all(ctx: &mut Context, game: &Game) -> GameResult<()> {
+    graphics::clear(ctx, graphics::BLACK);
+
     // TODO: These should re-use the meshes instead of remaking each time
-    draw_all_fov(ctx, &state.actors)?;
-    draw_obstacles(ctx, &state.game_map)?;
-    draw_end_area(ctx, &state.game_map)?;
-    draw_actors(ctx, &state.actors)
+    draw_all_fov(ctx, &game.actors)?;
+    draw_obstacles(ctx, &game.game_map)?;
+    draw_end_area(ctx, &game.game_map)?;
+    draw_actors(ctx, &game.actors)?;
+
+    graphics::present(ctx)
 }
 
 fn draw_all_fov(ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {

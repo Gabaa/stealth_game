@@ -1,5 +1,7 @@
-use crate::nalgebra::{distance, Matrix2, Point2, Unit, Vector2};
-use crate::polygon::Polygon;
+use crate::{
+    game::polygon::Polygon,
+    nalgebra::{distance, Matrix2, Point2, Unit, Vector2},
+};
 
 pub struct Ray {
     pub position: Point2<f32>,
