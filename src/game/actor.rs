@@ -1,10 +1,8 @@
 use {
-    crate::{
-        game::{controller::Controller, fov::FieldOfView, game_map::GameMap},
-        nalgebra::{distance, Point2, Unit, Vector2},
-    },
+    crate::game::{controller::Controller, fov::FieldOfView, game_map::GameMap},
     ggez::{
         input::keyboard::{is_key_pressed, KeyCode},
+        nalgebra::{distance, Point2, Unit, Vector2},
         Context,
     },
 };

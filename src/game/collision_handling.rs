@@ -1,9 +1,11 @@
 use {
-    crate::{
-        game::{actor::Actor, controller::Controller, game_map::GameMap, polygon::Polygon, Game},
-        nalgebra::{distance, Point2, Unit, Vector2},
+    crate::game::{
+        actor::Actor, controller::Controller, game_map::GameMap, polygon::Polygon, Game,
     },
-    ggez::Context,
+    ggez::{
+        nalgebra::{distance, Point2, Unit, Vector2},
+        Context,
+    },
 };
 
 pub fn apply_physics_movement(game: &mut Game, ctx: &Context) {

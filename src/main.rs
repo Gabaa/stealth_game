@@ -1,8 +1,9 @@
 mod frame;
 mod game;
+mod gui;
 mod state;
 
-use ggez::*;
+use ggez::{conf, event, ContextBuilder};
 use state::State;
 
 fn main() {

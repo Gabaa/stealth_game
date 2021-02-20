@@ -1,10 +1,9 @@
 use {
-    crate::{game::Game, nalgebra::Point2},
+    crate::{game::Game, gui::button::draw_button},
     ggez::{
-        graphics::{self, DrawMode, DrawParam, Rect, Scale, Text, TextFragment},
+        graphics::{self, Rect},
         Context, GameResult,
     },
-    std::f32,
 };
 
 pub trait Frame {
@@ -71,17 +70,4 @@ fn draw_quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult {
     draw_button(ctx, bounds, "Quit")?;
 
     Ok(())
-}
-
-fn draw_button(ctx: &mut Context, bounds: Rect, text: &str) -> GameResult {
-    let mesh = graphics::Mesh::new_rectangle(ctx, DrawMode::stroke(3.0), bounds, graphics::WHITE)?;
-    graphics::draw(ctx, &mesh, DrawParam::new())?;
-
-    let mut text = Text::new(TextFragment::new(text).scale(Scale::uniform(bounds.h * 0.9)));
-    text.set_bounds(
-        Point2::new(bounds.w, f32::INFINITY),
-        graphics::Align::Center,
-    );
-    let dest = Point2::new(bounds.x, bounds.y);
-    graphics::draw(ctx, &text, DrawParam::default().dest(dest))
 }

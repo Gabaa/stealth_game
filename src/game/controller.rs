@@ -1,4 +1,4 @@
-use crate::nalgebra::Point2;
+use ggez::nalgebra::Point2;
 
 pub enum Controller {
     Player(),

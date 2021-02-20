@@ -1,13 +1,11 @@
 use {
-    crate::{
-        game::{
-            actor::Actor,
-            game_map::GameMap,
-            polygon::Polygon,
-            raycast::{raycast, Ray},
-        },
-        nalgebra::{distance, Point2, Unit, Vector2},
+    crate::game::{
+        actor::Actor,
+        game_map::GameMap,
+        polygon::Polygon,
+        raycast::{raycast, Ray},
     },
+    ggez::nalgebra::{distance, Point2, Unit, Vector2},
     std::{cmp::Ordering, f32},
 };
 
