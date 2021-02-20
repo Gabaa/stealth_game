@@ -37,10 +37,7 @@ impl Actor {
     }
 
     pub fn is_player(&self) -> bool {
-        match self.controller {
-            Controller::Player() => true,
-            _ => false,
-        }
+        matches!(self.controller, Controller::Player())
     }
 
     pub fn get_next_movement(&mut self, ctx: &Context) -> Vector2<f32> {

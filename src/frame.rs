@@ -35,7 +35,7 @@ impl Frame for GameFrame {
 pub struct MainMenuFrame {}
 
 impl Frame for MainMenuFrame {
-    fn tick(&mut self, ctx: &mut Context) {}
+    fn tick(&mut self, _ctx: &mut Context) {}
 
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         let screen_coords = graphics::screen_coordinates(ctx);

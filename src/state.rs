@@ -13,15 +13,27 @@ impl State {
             frame_stack: vec![Box::new(MainMenuFrame {})],
         }
     }
+
+    #[allow(clippy::borrowed_box)]
+    pub fn top_frame(&self) -> GameResult<&Box<dyn Frame>> {
+        match (*self.frame_stack).last() {
+            Some(frame) => Ok(frame),
+            None => Err(GameError::WindowError("No frame".to_owned())),
+        }
+    }
+
+    pub fn top_frame_mut(&mut self) -> GameResult<&mut Box<dyn Frame>> {
+        match self.frame_stack.last_mut() {
+            Some(frame) => Ok(frame),
+            None => Err(GameError::WindowError("No frame".to_owned())),
+        }
+    }
 }
 
 impl event::EventHandler for State {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         while timer::check_update_time(ctx, 60) {
-            match self.frame_stack.last_mut() {
-                Some(frame) => (*frame).tick(ctx),
-                None => return Err(GameError::EventLoopError("No frame".to_owned())),
-            }
+            self.top_frame_mut()?.tick(ctx)
         }
 
         Ok(())
@@ -29,12 +41,7 @@ impl event::EventHandler for State {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
-
-        match self.frame_stack.last() {
-            Some(frame) => frame.draw(ctx),
-            None => Err(GameError::EventLoopError("No frame".to_owned())),
-        }?;
-
+        self.top_frame()?.draw(ctx)?;
         graphics::present(ctx)
     }
 
@@ -42,8 +49,8 @@ impl event::EventHandler for State {
         &mut self,
         _ctx: &mut Context,
         _button: MouseButton,
-        x: f32,
-        y: f32,
+        _x: f32,
+        _y: f32,
     ) {
         self.frame_stack.push(Box::new(GameFrame::new()));
         // println!("{}, {}", x, y)

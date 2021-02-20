@@ -91,7 +91,7 @@ fn line_intersection(ray: &Ray, v1: Point2<f32>, v2: Point2<f32>) -> Option<Poin
         // u = (q − p) × r / (r × s)
         let u = cross(v1 - ray.position, ray_direction) / cross(ray_direction, edge);
 
-        if 0.0 <= u && u <= 1.0 && 0.0 <= t {
+        if (0.0..=1.0).contains(&u) && 0.0 <= t {
             Some(v1 + u * edge)
         } else {
             None

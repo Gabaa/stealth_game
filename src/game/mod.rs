@@ -48,10 +48,10 @@ impl Game {
                     Controller::Guard(Patrol {
                         points: vec![
                             Point2::new(604.0, 96.0),
-                            Point2::new(279.0, 72.0),
-                            Point2::new(65.0, 345.0),
-                            Point2::new(326.0, 511.0),
                             Point2::new(659.0, 357.0),
+                            Point2::new(326.0, 511.0),
+                            Point2::new(65.0, 345.0),
+                            Point2::new(279.0, 72.0),
                         ],
                         i: 0,
                     }),
