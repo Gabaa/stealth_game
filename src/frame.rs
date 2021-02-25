@@ -1,5 +1,7 @@
+use crate::gui::UILayer;
+
 use {
-    crate::{game::Game, gui::button::draw_button},
+    crate::{game::Game, gui::button::Button},
     ggez::{
         graphics::{self, Rect},
         Context, GameResult,
@@ -26,27 +28,40 @@ impl Frame for GameFrame {
         self.game.tick(ctx);
     }
 
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context) -> GameResult {
         self.game.draw(ctx)
     }
 }
 
-pub struct MainMenuFrame {}
+pub struct MainMenuFrame {
+    ui_layer: UILayer,
+}
+
+impl MainMenuFrame {
+    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+        let mut ui_layer = UILayer::new();
+
+        let screen_coords = graphics::screen_coordinates(ctx);
+
+        let start_button = start_button(ctx, screen_coords)?;
+        ui_layer.add(Box::new(start_button));
+
+        let quit_button = quit_button(ctx, screen_coords)?;
+        ui_layer.add(Box::new(quit_button));
+
+        Ok(MainMenuFrame { ui_layer })
+    }
+}
 
 impl Frame for MainMenuFrame {
     fn tick(&mut self, _ctx: &mut Context) {}
 
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
-        let screen_coords = graphics::screen_coordinates(ctx);
-
-        draw_start_game_button(ctx, screen_coords)?;
-        draw_quit_button(ctx, screen_coords)?;
-
-        Ok(())
+        self.ui_layer.draw(ctx)
     }
 }
 
-fn draw_start_game_button(ctx: &mut Context, screen_coords: Rect) -> GameResult {
+fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
     let bounds = Rect {
         x: screen_coords.x + screen_coords.w / 4.0,
         y: screen_coords.y + screen_coords.h / 2.0 - 50.0,
@@ -54,20 +69,19 @@ fn draw_start_game_button(ctx: &mut Context, screen_coords: Rect) -> GameResult 
         h: 100.0,
     };
 
-    draw_button(ctx, bounds, "Play")?;
-
-    Ok(())
+    Button::new(ctx, bounds, Some("Play"))
 }
 
-fn draw_quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult {
+fn quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
+    let width = 150.0;
+    let height = 50.0;
+
     let bounds = Rect {
-        x: screen_coords.x + screen_coords.w / 3.0,
-        y: screen_coords.y + screen_coords.h / 2.0 + 150.0,
-        w: screen_coords.w / 3.0,
-        h: 50.0,
+        x: screen_coords.x + screen_coords.w / 2.0 - width / 2.0,
+        y: screen_coords.y + screen_coords.h / 2.0,
+        w: width,
+        h: height,
     };
 
-    draw_button(ctx, bounds, "Quit")?;
-
-    Ok(())
+    Button::new(ctx, bounds, Some("Quit"))
 }

@@ -8,13 +8,12 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> Self {
-        State {
-            frame_stack: vec![Box::new(MainMenuFrame {})],
-        }
+    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+        Ok(State {
+            frame_stack: vec![Box::new(MainMenuFrame::new(ctx)?)],
+        })
     }
 
-    #[allow(clippy::borrowed_box)]
     pub fn top_frame(&self) -> GameResult<&Box<dyn Frame>> {
         match (*self.frame_stack).last() {
             Some(frame) => Ok(frame),
