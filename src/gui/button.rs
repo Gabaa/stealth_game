@@ -1,5 +1,7 @@
 use ggez::{
-    graphics::{draw, Align, DrawMode, DrawParam, Mesh, Rect, Scale, Text, TextFragment, WHITE},
+    graphics::{
+        draw, Align, DrawMode, DrawParam, Drawable, Mesh, Rect, Scale, Text, TextFragment, WHITE,
+    },
     nalgebra::Point2,
     Context, GameResult,
 };
@@ -39,4 +41,28 @@ impl UIElement for Button {
             None => Ok(()),
         }
     }
+
+    fn contains_point(&self, ctx: &mut Context, point: &Point2<f32>) -> bool {
+        match self.mesh.dimensions(ctx) {
+            Some(bounds) => bounds.contains(*point),
+            _ => false,
+        }
+    }
+
+    fn mouse_enter(&self, _ctx: &mut Context) {
+        match &self.text {
+            Some((text, _)) => {
+                println!("Entered {}", text.contents())
+            }
+            _ => {}
+        }
+    }
+
+    fn mouse_leave(&self, _ctx: &mut Context) {}
+
+    fn mouse_stay(&self, _ctx: &mut Context) {}
+
+    fn mouse_press(&self, _ctx: &mut Context) {}
+
+    fn mouse_release(&self, _ctx: &mut Context) {}
 }

@@ -1,5 +1,5 @@
 use {
-    crate::frame::{Frame, GameFrame, MainMenuFrame},
+    crate::frame::{Frame, MainMenuFrame},
     ggez::{event, graphics, input::mouse::MouseButton, timer, Context, GameError, GameResult},
 };
 
@@ -44,14 +44,31 @@ impl event::EventHandler for State {
         graphics::present(ctx)
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _button: MouseButton,
-        _x: f32,
-        _y: f32,
-    ) {
-        self.frame_stack.push(Box::new(GameFrame::new()));
-        // println!("{}, {}", x, y)
+    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        match self.top_frame_mut() {
+            Ok(frame) => frame.mouse_update(ctx, MouseEvent::MOTION { x, y }),
+            _ => {}
+        }
     }
+
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        match self.top_frame_mut() {
+            Ok(frame) => frame.mouse_update(ctx, MouseEvent::PRESS { button, x, y }),
+            _ => {}
+        }
+        // self.frame_stack.push(Box::new(GameFrame::new()));
+    }
+
+    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        match self.top_frame_mut() {
+            Ok(frame) => frame.mouse_update(ctx, MouseEvent::RELEASE { button, x, y }),
+            _ => {}
+        }
+    }
+}
+
+pub enum MouseEvent {
+    MOTION { x: f32, y: f32 },
+    PRESS { button: MouseButton, x: f32, y: f32 },
+    RELEASE { button: MouseButton, x: f32, y: f32 },
 }

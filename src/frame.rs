@@ -1,4 +1,4 @@
-use crate::gui::UILayer;
+use crate::{gui::UILayer, state::MouseEvent};
 
 use {
     crate::{game::Game, gui::button::Button},
@@ -11,6 +11,7 @@ use {
 pub trait Frame {
     fn tick(&mut self, ctx: &mut Context);
     fn draw(&self, ctx: &mut Context) -> GameResult<()>;
+    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent);
 }
 
 pub struct GameFrame {
@@ -31,6 +32,8 @@ impl Frame for GameFrame {
     fn draw(&self, ctx: &mut Context) -> GameResult {
         self.game.draw(ctx)
     }
+
+    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent) {}
 }
 
 pub struct MainMenuFrame {
@@ -58,6 +61,16 @@ impl Frame for MainMenuFrame {
 
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         self.ui_layer.draw(ctx)
+    }
+
+    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent) {
+        match mouse_event {
+            MouseEvent::MOTION { x, y } => self.ui_layer.mouse_motion(ctx, x, y),
+            MouseEvent::PRESS { button, x, y } => {}
+            MouseEvent::RELEASE { button, x, y } => {}
+        }
+
+        // TODO: find en måde at lave en game frame
     }
 }
 
