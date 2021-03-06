@@ -1,4 +1,7 @@
-use crate::{gui::UILayer, state::MouseEvent};
+use crate::{
+    gui::UILayer,
+    state::{FrameEvent, MouseEvent},
+};
 
 use {
     crate::{game::Game, gui::button::Button},
@@ -11,7 +14,7 @@ use {
 pub trait Frame {
     fn tick(&mut self, ctx: &mut Context);
     fn draw(&self, ctx: &mut Context) -> GameResult<()>;
-    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent);
+    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent) -> Vec<FrameEvent>;
 }
 
 pub struct GameFrame {
@@ -33,7 +36,9 @@ impl Frame for GameFrame {
         self.game.draw(ctx)
     }
 
-    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent) {}
+    fn mouse_update(&mut self, _ctx: &mut Context, _mouse_event: MouseEvent) -> Vec<FrameEvent> {
+        vec![]
+    }
 }
 
 pub struct MainMenuFrame {
@@ -63,38 +68,62 @@ impl Frame for MainMenuFrame {
         self.ui_layer.draw(ctx)
     }
 
-    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent) {
+    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent) -> Vec<FrameEvent> {
         match mouse_event {
-            MouseEvent::MOTION { x, y } => self.ui_layer.mouse_motion(ctx, x, y),
-            MouseEvent::PRESS { button, x, y } => {}
-            MouseEvent::RELEASE { button, x, y } => {}
+            MouseEvent::PRESS { button, x, y } => self.ui_layer.mouse_press(ctx, button, x, y),
         }
-
-        // TODO: find en måde at lave en game frame
     }
 }
 
-fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
+fn start_button(ctx: &mut Context, _screen_coords: Rect) -> GameResult<Button> {
+    /*
     let bounds = Rect {
         x: screen_coords.x + screen_coords.w / 4.0,
         y: screen_coords.y + screen_coords.h / 2.0 - 50.0,
         w: screen_coords.w / 2.0,
         h: 100.0,
     };
+    */
 
-    Button::new(ctx, bounds, Some("Play"))
+    let bounds = Rect {
+        x: 100.0,
+        y: 100.0,
+        w: 200.0,
+        h: 100.0,
+    };
+
+    Button::new(
+        ctx,
+        bounds,
+        Some("Play"),
+        Box::new(|| {
+            let frame = Box::new(GameFrame::new());
+            Some(FrameEvent::PushFrame(frame))
+        }),
+    )
 }
 
-fn quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
-    let width = 150.0;
-    let height = 50.0;
-
+fn quit_button(ctx: &mut Context, _screen_coords: Rect) -> GameResult<Button> {
+    /*
     let bounds = Rect {
         x: screen_coords.x + screen_coords.w / 2.0 - width / 2.0,
         y: screen_coords.y + screen_coords.h / 2.0,
         w: width,
         h: height,
     };
+    */
 
-    Button::new(ctx, bounds, Some("Quit"))
+    let bounds = Rect {
+        x: 100.0,
+        y: 250.0,
+        w: 200.0,
+        h: 100.0,
+    };
+
+    Button::new(
+        ctx,
+        bounds,
+        Some("Quit"),
+        Box::new(|| Some(FrameEvent::PopFrame)),
+    )
 }
