@@ -1,7 +1,7 @@
-use {
-    crate::frame::{Frame, MainMenuFrame},
-    ggez::{event, graphics, input::mouse::MouseButton, timer, Context, GameResult},
-};
+use ggez::event::{KeyCode, KeyMods};
+
+use crate::frame::{main_menu::MainMenuFrame, Frame, FrameEvent};
+use ggez::{event, graphics, input::mouse::MouseButton, timer, Context, GameResult};
 
 pub struct State {
     frame_stack: Vec<Box<dyn Frame>>,
@@ -53,9 +53,21 @@ impl event::EventHandler for State {
         graphics::present(ctx)
     }
 
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _keycode: KeyCode,
+        _keymods: KeyMods,
+        _repeat: bool,
+    ) {
+    }
+
+    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {}
+
     fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         if let Some(frame) = self.top_frame_mut() {
-            for event in frame.mouse_update(ctx, MouseEvent::PRESS { button, x, y }) {
+            let events = frame.mouse_update(ctx, MouseEvent::PRESS { button, x, y });
+            for event in events {
                 self.handle_event(event)
             }
 
@@ -68,9 +80,4 @@ impl event::EventHandler for State {
 
 pub enum MouseEvent {
     PRESS { button: MouseButton, x: f32, y: f32 },
-}
-
-pub enum FrameEvent {
-    PopFrame,
-    PushFrame(Box<dyn Frame>),
 }

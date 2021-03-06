@@ -1,45 +1,12 @@
+use super::{game::GameFrame, Frame, FrameEvent};
 use crate::{
-    gui::UILayer,
-    state::{FrameEvent, MouseEvent},
+    gui::{button::Button, UILayer},
+    state::MouseEvent,
 };
-
-use {
-    crate::{game::Game, gui::button::Button},
-    ggez::{
-        graphics::{self, Rect},
-        Context, GameResult,
-    },
+use ggez::{
+    graphics::{self, Rect},
+    Context, GameResult,
 };
-
-pub trait Frame {
-    fn tick(&mut self, ctx: &mut Context);
-    fn draw(&self, ctx: &mut Context) -> GameResult<()>;
-    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent) -> Vec<FrameEvent>;
-}
-
-pub struct GameFrame {
-    game: Game,
-}
-
-impl GameFrame {
-    pub fn new() -> Self {
-        GameFrame { game: Game::new() }
-    }
-}
-
-impl Frame for GameFrame {
-    fn tick(&mut self, ctx: &mut Context) {
-        self.game.tick(ctx);
-    }
-
-    fn draw(&self, ctx: &mut Context) -> GameResult {
-        self.game.draw(ctx)
-    }
-
-    fn mouse_update(&mut self, _ctx: &mut Context, _mouse_event: MouseEvent) -> Vec<FrameEvent> {
-        vec![]
-    }
-}
 
 pub struct MainMenuFrame {
     ui_layer: UILayer,

@@ -8,18 +8,16 @@ pub mod game_map;
 pub mod polygon;
 pub mod raycast;
 
-use {
-    crate::game::{
-        actor::Actor,
-        collision_handling::apply_physics_movement,
-        controller::{Controller, Patrol},
-        drawing::draw_all,
-        fov::{ConeFieldOfView, NoFieldOfView},
-        game_map::GameMap,
-    },
-    ggez::{event, nalgebra::Point2, Context, GameResult},
-    std::boxed::Box,
+use crate::game::{
+    actor::Actor,
+    collision_handling::apply_physics_movement,
+    controller::{Controller, Patrol},
+    drawing::draw_all,
+    fov::{ConeFieldOfView, NoFieldOfView},
+    game_map::GameMap,
 };
+use ggez::{event, nalgebra::Point2, Context, GameResult};
+use std::boxed::Box;
 
 pub struct Game {
     pub actors: Vec<Actor>,

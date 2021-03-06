@@ -1,3 +1,5 @@
+use super::ui_layer::UIElement;
+use crate::frame::FrameEvent;
 use ggez::{
     event::MouseButton,
     graphics::{
@@ -6,10 +8,6 @@ use ggez::{
     nalgebra::Point2,
     Context, GameResult,
 };
-
-use crate::state::FrameEvent;
-
-use super::UIElement;
 
 pub struct Button {
     mesh: Mesh,
