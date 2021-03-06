@@ -60,9 +60,8 @@ impl event::EventHandler for State {
         _keymods: KeyMods,
         _repeat: bool,
     ) {
+        todo!("Implement key input system (so that esc pops a frame)")
     }
-
-    fn key_up_event(&mut self, _ctx: &mut Context, _keycode: KeyCode, _keymods: KeyMods) {}
 
     fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         if let Some(frame) = self.top_frame_mut() {
