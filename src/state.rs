@@ -22,12 +22,22 @@ impl State {
         self.frame_stack.last_mut()
     }
 
-    fn handle_event(&mut self, event: FrameEvent) {
-        match event {
-            FrameEvent::PopFrame => {
-                self.frame_stack.pop();
+    fn receive_input(&mut self, ctx: &mut Context, input: Input) {
+        if let Some(frame) = self.top_frame_mut() {
+            let events = frame.receive_input(ctx, input);
+
+            for event in events {
+                match event {
+                    FrameEvent::PopFrame => {
+                        self.frame_stack.pop();
+                    }
+                    FrameEvent::PushFrame(frame) => self.frame_stack.push(frame),
+                }
+
+                if self.frame_stack.is_empty() {
+                    event::quit(ctx);
+                }
             }
-            FrameEvent::PushFrame(frame) => self.frame_stack.push(frame),
         }
     }
 }
@@ -55,28 +65,20 @@ impl event::EventHandler for State {
 
     fn key_down_event(
         &mut self,
-        _ctx: &mut Context,
-        _keycode: KeyCode,
+        ctx: &mut Context,
+        key_code: KeyCode,
         _keymods: KeyMods,
         _repeat: bool,
     ) {
-        todo!("Implement key input system (so that esc pops a frame)")
+        self.receive_input(ctx, Input::KeyDown { key_code })
     }
 
     fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
-        if let Some(frame) = self.top_frame_mut() {
-            let events = frame.mouse_update(ctx, MouseEvent::PRESS { button, x, y });
-            for event in events {
-                self.handle_event(event)
-            }
-
-            if self.frame_stack.is_empty() {
-                event::quit(ctx);
-            }
-        }
+        self.receive_input(ctx, Input::MouseDown { button, x, y })
     }
 }
 
-pub enum MouseEvent {
-    PRESS { button: MouseButton, x: f32, y: f32 },
+pub enum Input {
+    MouseDown { button: MouseButton, x: f32, y: f32 },
+    KeyDown { key_code: KeyCode },
 }

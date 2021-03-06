@@ -1,9 +1,10 @@
 use super::{game::GameFrame, Frame, FrameEvent};
 use crate::{
     gui::{button::Button, UILayer},
-    state::MouseEvent,
+    state::Input,
 };
 use ggez::{
+    event::KeyCode,
     graphics::{self, Rect},
     Context, GameResult,
 };
@@ -35,27 +36,28 @@ impl Frame for MainMenuFrame {
         self.ui_layer.draw(ctx)
     }
 
-    fn mouse_update(&mut self, ctx: &mut Context, mouse_event: MouseEvent) -> Vec<FrameEvent> {
-        match mouse_event {
-            MouseEvent::PRESS { button, x, y } => self.ui_layer.mouse_press(ctx, button, x, y),
+    fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<FrameEvent> {
+        match input {
+            Input::MouseDown { button, x, y } => self.ui_layer.mouse_press(ctx, button, x, y),
+            Input::KeyDown { key_code } => {
+                let mut events = Vec::new();
+
+                match key_code {
+                    KeyCode::Escape => events.push(FrameEvent::PopFrame),
+                    _ => {}
+                };
+
+                events
+            }
         }
     }
 }
 
-fn start_button(ctx: &mut Context, _screen_coords: Rect) -> GameResult<Button> {
-    /*
+fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
     let bounds = Rect {
         x: screen_coords.x + screen_coords.w / 4.0,
-        y: screen_coords.y + screen_coords.h / 2.0 - 50.0,
+        y: screen_coords.y + screen_coords.h / 4.0,
         w: screen_coords.w / 2.0,
-        h: 100.0,
-    };
-    */
-
-    let bounds = Rect {
-        x: 100.0,
-        y: 100.0,
-        w: 200.0,
         h: 100.0,
     };
 
@@ -70,20 +72,11 @@ fn start_button(ctx: &mut Context, _screen_coords: Rect) -> GameResult<Button> {
     )
 }
 
-fn quit_button(ctx: &mut Context, _screen_coords: Rect) -> GameResult<Button> {
-    /*
+fn quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
     let bounds = Rect {
-        x: screen_coords.x + screen_coords.w / 2.0 - width / 2.0,
+        x: screen_coords.x + screen_coords.w / 4.0,
         y: screen_coords.y + screen_coords.h / 2.0,
-        w: width,
-        h: height,
-    };
-    */
-
-    let bounds = Rect {
-        x: 100.0,
-        y: 250.0,
-        w: 200.0,
+        w: screen_coords.w / 2.0,
         h: 100.0,
     };
 

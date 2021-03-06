@@ -1,9 +1,9 @@
 use crate::game::Game;
 use crate::{
     frame::{Frame, FrameEvent},
-    state::MouseEvent,
+    state::Input,
 };
-use ggez::{Context, GameResult};
+use ggez::{event::KeyCode, Context, GameResult};
 
 pub struct GameFrame {
     game: Game,
@@ -24,7 +24,17 @@ impl Frame for GameFrame {
         self.game.draw(ctx)
     }
 
-    fn mouse_update(&mut self, _ctx: &mut Context, _mouse_event: MouseEvent) -> Vec<FrameEvent> {
-        vec![]
+    fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<FrameEvent> {
+        let mut events = Vec::new();
+
+        match input {
+            Input::MouseDown { .. } => {}
+            Input::KeyDown { key_code } => match key_code {
+                KeyCode::Escape => events.push(FrameEvent::PopFrame),
+                _ => {}
+            },
+        };
+
+        events
     }
 }
