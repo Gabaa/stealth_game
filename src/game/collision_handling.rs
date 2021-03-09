@@ -10,7 +10,7 @@ use {
 
 pub fn apply_physics_movement(game: &mut Game, ctx: &Context) {
     for actor in &mut game.actors {
-        let delta = actor.get_next_movement(ctx);
+        let delta = actor.next_movement(ctx);
 
         let next_pos = &mut (actor.pos + delta);
         if delta.magnitude() > 0.0 {
@@ -19,7 +19,7 @@ pub fn apply_physics_movement(game: &mut Game, ctx: &Context) {
 
         handle_obstacle_collisions(&game.game_map, actor, next_pos);
 
-        if let Controller::Player() = actor.controller {
+        if let Controller::Player(_) = actor.controller {
             game.player_won = did_player_win(&game.game_map, &actor, *next_pos);
         }
 

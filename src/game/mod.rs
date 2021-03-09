@@ -10,7 +10,7 @@ pub mod renderer;
 use self::{
     actor::Actor,
     collision_handling::apply_physics_movement,
-    controller::{Controller, Patrol},
+    controller::Controller,
     fov::{ConeFieldOfView, NoFieldOfView},
     game_map::GameMap,
     renderer::Renderer,
@@ -27,32 +27,33 @@ pub struct Game {
 
 impl Game {
     pub fn new() -> Self {
+        let mut actors = Vec::new();
+        actors.push(Actor::new(
+            30.0,
+            40.0,
+            Box::new(NoFieldOfView {}),
+            Controller::new_player(),
+            1.2,
+        ));
+        actors.push(Actor::new(
+            600.0,
+            50.0,
+            Box::new(ConeFieldOfView::new(90.0, 300.0)),
+            Controller::new_guard(
+                vec![
+                    Point2::new(604.0, 96.0),
+                    Point2::new(659.0, 357.0),
+                    Point2::new(326.0, 511.0),
+                    Point2::new(65.0, 345.0),
+                    Point2::new(279.0, 72.0),
+                ],
+                0,
+            ),
+            1.3,
+        ));
+
         Game {
-            actors: vec![
-                Actor::new(
-                    30.0,
-                    40.0,
-                    Box::new(NoFieldOfView {}),
-                    Controller::Player(),
-                    1.2,
-                ),
-                Actor::new(
-                    600.0,
-                    50.0,
-                    Box::new(ConeFieldOfView::new(90.0, 300.0)),
-                    Controller::Guard(Patrol {
-                        points: vec![
-                            Point2::new(604.0, 96.0),
-                            Point2::new(659.0, 357.0),
-                            Point2::new(326.0, 511.0),
-                            Point2::new(65.0, 345.0),
-                            Point2::new(279.0, 72.0),
-                        ],
-                        i: 0,
-                    }),
-                    1.3,
-                ),
-            ],
+            actors,
             game_map: GameMap::new(),
             player_won: false,
             renderer: Renderer::new(),
