@@ -1,20 +1,19 @@
 pub mod actor;
 pub mod collision_handling;
-pub mod colors;
 pub mod controller;
-pub mod drawing;
 pub mod fov;
 pub mod game_map;
 pub mod polygon;
 pub mod raycast;
+pub mod renderer;
 
-use crate::game::{
+use self::{
     actor::Actor,
     collision_handling::apply_physics_movement,
     controller::{Controller, Patrol},
-    drawing::draw_all,
     fov::{ConeFieldOfView, NoFieldOfView},
     game_map::GameMap,
+    renderer::Renderer,
 };
 use ggez::{event, nalgebra::Point2, Context, GameResult};
 use std::boxed::Box;
@@ -23,6 +22,7 @@ pub struct Game {
     pub actors: Vec<Actor>,
     pub game_map: GameMap,
     pub player_won: bool,
+    renderer: Renderer,
 }
 
 impl Game {
@@ -55,6 +55,7 @@ impl Game {
             ],
             game_map: GameMap::new(),
             player_won: false,
+            renderer: Renderer::new(),
         }
     }
 
@@ -77,7 +78,7 @@ impl Game {
     }
 
     pub fn draw(&self, ctx: &mut Context) -> GameResult<()> {
-        draw_all(ctx, &self)
+        self.renderer.render(ctx, &self)
     }
 }
 

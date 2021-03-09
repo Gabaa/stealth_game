@@ -1,22 +1,36 @@
-use {
-    crate::game::{actor::Actor, colors, fov::FieldOfView, game_map::GameMap, Game},
-    ggez::{graphics, Context, GameResult},
+use super::{actor::Actor, fov::FieldOfView, game_map::GameMap, Game};
+use ggez::{
+    graphics::{self, Color},
+    Context, GameResult,
 };
 
-pub fn draw_all(ctx: &mut Context, game: &Game) -> GameResult<()> {
-    // TODO: These should re-use the meshes instead of remaking each time
-    draw_all_fov(ctx, &game.actors)?;
-    draw_obstacles(ctx, &game.game_map)?;
-    draw_end_area(ctx, &game.game_map)?;
-    draw_actors(ctx, &game.actors)
+pub const END_AREA: Color = Color::new(0.0, 1.0, 0.0, 0.1);
+pub const PLAYER_VISIBLE_AREA: Color = Color::new(1.0, 1.0, 1.0, 0.1);
+pub const GUARD_VISIBLE_AREA: Color = Color::new(1.0, 0.0, 0.0, 0.1);
+pub const OBSTACLE: Color = Color::new(0.4, 0.4, 0.4, 1.0);
+
+pub struct Renderer {}
+
+impl Renderer {
+    pub fn new() -> Self {
+        Renderer {}
+    }
+
+    pub fn render(&self, ctx: &mut Context, game: &Game) -> GameResult<()> {
+        // TODO: These should re-use the meshes instead of remaking each time
+        draw_all_fov(ctx, &game.actors)?;
+        draw_obstacles(ctx, &game.game_map)?;
+        draw_end_area(ctx, &game.game_map)?;
+        draw_actors(ctx, &game.actors)
+    }
 }
 
 fn draw_all_fov(ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
     for actor in actors {
         let color = if actor.is_player() {
-            colors::PLAYER_VISIBLE_AREA
+            PLAYER_VISIBLE_AREA
         } else {
-            colors::GUARD_VISIBLE_AREA
+            GUARD_VISIBLE_AREA
         };
         draw_fov(ctx, &*actor.fov, color)?;
     }
@@ -46,7 +60,7 @@ fn draw_obstacles(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
             ctx,
             graphics::DrawMode::stroke(3.0),
             &polygon.verts,
-            colors::OBSTACLE,
+            OBSTACLE,
         )?;
 
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
@@ -60,7 +74,7 @@ fn draw_end_area(ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
         ctx,
         graphics::DrawMode::fill(),
         &game_map.end_area.verts,
-        colors::END_AREA,
+        END_AREA,
     )?;
 
     graphics::draw(ctx, &mesh, graphics::DrawParam::default())
