@@ -1,6 +1,7 @@
 use super::{actor::Actor, fov::FieldOfView, game_map::GameMap, Game};
 use ggez::{
-    graphics::{self, Color},
+    graphics::{self, Color, Rect},
+    nalgebra::Point2,
     Context, GameResult,
 };
 
@@ -89,6 +90,10 @@ fn draw_actors(ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
 }
 
 fn draw_actor(ctx: &mut Context, actor: &Actor) -> GameResult<()> {
+    if !actor.is_player() {
+        draw_discovery_bar(ctx, actor.discovered_player, &actor.pos, actor.radius)?;
+    }
+
     let mesh = graphics::Mesh::new_circle(
         ctx,
         graphics::DrawMode::fill(),
@@ -96,6 +101,27 @@ fn draw_actor(ctx: &mut Context, actor: &Actor) -> GameResult<()> {
         actor.radius,
         0.5,
         graphics::WHITE,
+    )?;
+
+    graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+}
+
+fn draw_discovery_bar(
+    ctx: &mut Context,
+    discovered_player: f32,
+    pos: &Point2<f32>,
+    radius: f32,
+) -> GameResult<()> {
+    let height = radius / 2.0;
+    let top = pos.y - radius * 1.5 - (height / 2.0);
+    let width = radius * 2.0 * discovered_player;
+    let left = pos.x - (width / 2.0);
+
+    let mesh = graphics::Mesh::new_rectangle(
+        ctx,
+        graphics::DrawMode::fill(),
+        Rect::new(left, top, width, height),
+        graphics::Color::from_rgb(100, 100, 255),
     )?;
 
     graphics::draw(ctx, &mesh, graphics::DrawParam::default())
