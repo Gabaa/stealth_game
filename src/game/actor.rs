@@ -14,6 +14,7 @@ pub struct Actor {
     pub fov: Box<dyn FieldOfView>,
     pub controller: Controller,
     pub move_speed: f32,
+    pub discovered_player: f32,
 }
 
 impl Actor {
@@ -30,6 +31,7 @@ impl Actor {
             fov,
             controller,
             move_speed,
+            discovered_player: 0.0,
         }
     }
 

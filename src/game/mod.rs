@@ -39,7 +39,7 @@ impl Game {
             event::quit(ctx);
         }
 
-        if was_player_found(&self) {
+        if was_player_found(self) {
             println!("Player was discovered...");
             event::quit(ctx);
         }
@@ -54,29 +54,27 @@ impl Game {
     }
 }
 
-fn was_player_found(game: &Game) -> bool {
-    let mut player_pos_opt = None;
+fn was_player_found(game: &mut Game) -> bool {
+    let pos = game
+        .actors
+        .iter()
+        .filter(|actor| actor.is_player())
+        .map(|actor| actor.pos)
+        .next()
+        .expect("no player actor found");
 
-    for actor in &game.actors {
-        if actor.is_player() {
-            player_pos_opt = Some(actor.pos);
-            break;
-        }
-    }
-
-    match player_pos_opt {
-        Some(player_pos) => {
-            let mut found = false;
-
-            for actor in &game.actors {
-                if actor.is_player() {
-                    continue;
-                }
-                found |= actor.fov.is_inside_fov(actor, &game.game_map, player_pos)
+    for actor in game.actors.iter_mut().filter(|actor| !actor.is_player()) {
+        if actor.fov.is_inside_fov(&game.game_map, pos) {
+            actor.discovered_player += 0.015; // approx 60 ticks = 1 second to discover
+        } else {
+            actor.discovered_player -= 0.015;
+            if actor.discovered_player < 0.0 {
+                actor.discovered_player = 0.0;
             }
-
-            found
         }
-        None => false,
     }
+
+    game.actors
+        .iter()
+        .any(|actor| actor.discovered_player >= 1.0)
 }

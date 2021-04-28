@@ -1,6 +1,5 @@
 use {
     crate::game::{
-        actor::Actor,
         game_map::GameMap,
         polygon::Polygon,
         raycast::{raycast, Ray},
@@ -17,13 +16,15 @@ pub trait FieldOfView {
         direction: Unit<Vector2<f32>>,
         game_map: &GameMap,
     );
-    fn is_inside_fov(&self, actor: &Actor, game_map: &GameMap, point: Point2<f32>) -> bool;
+    fn is_inside_fov(&self, game_map: &GameMap, point: Point2<f32>) -> bool;
 }
 
 pub struct ConeFieldOfView {
     visible_area: Polygon,
     view_angle: f32,
     view_distance: f32,
+    origin: Point2<f32>,
+    direction: Unit<Vector2<f32>>,
 }
 
 impl ConeFieldOfView {
@@ -32,6 +33,8 @@ impl ConeFieldOfView {
             visible_area: Polygon::new(vec![]),
             view_angle: fov_degrees.to_radians(),
             view_distance,
+            origin: Point2::new(0.0, 0.0),
+            direction: Unit::new_normalize(Vector2::new(1.0, 0.0)),
         }
     }
 }
@@ -54,6 +57,9 @@ impl FieldOfView for ConeFieldOfView {
         actor_direction: Unit<Vector2<f32>>,
         game_map: &GameMap,
     ) {
+        self.origin = actor_pos;
+        self.direction = actor_direction;
+
         let mut new_verts: Vec<Point2<f32>> = vec![];
 
         if self.view_angle < f32::consts::PI {
@@ -124,19 +130,19 @@ impl FieldOfView for ConeFieldOfView {
         self.visible_area = Polygon::new(new_verts);
     }
 
-    fn is_inside_fov(&self, actor: &Actor, game_map: &GameMap, point: Point2<f32>) -> bool {
-        let direction_to_point = point - actor.pos;
-        let angle = direction_to_point.angle(&actor.direction);
+    fn is_inside_fov(&self, game_map: &GameMap, point: Point2<f32>) -> bool {
+        let direction_to_point = point - self.origin;
+        let angle = direction_to_point.angle(&self.direction);
         if angle > (self.view_angle / 2.0) {
             return false;
         }
 
-        let dist = distance(&actor.pos, &point);
+        let dist = distance(&self.origin, &point);
         if dist > self.view_distance {
             return false;
         }
 
-        let ray = Ray::new(actor.pos, Unit::new_normalize(direction_to_point));
+        let ray = Ray::new(self.origin, Unit::new_normalize(direction_to_point));
         let hit = raycast(&ray, &game_map.obstacles, dist);
 
         hit.is_none()
@@ -165,7 +171,7 @@ impl FieldOfView for NoFieldOfView {
     ) {
     }
 
-    fn is_inside_fov(&self, _actor: &Actor, _game_map: &GameMap, _point: Point2<f32>) -> bool {
+    fn is_inside_fov(&self, _game_map: &GameMap, _point: Point2<f32>) -> bool {
         false
     }
 }
