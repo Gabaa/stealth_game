@@ -65,7 +65,7 @@ impl PlayerController {
 }
 
 pub struct GuardController {
-    points: Vec<Point2<f32>>,
+    pub points: Vec<Point2<f32>>,
     i: usize,
 }
 

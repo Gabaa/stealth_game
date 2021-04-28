@@ -1,4 +1,6 @@
-use crate::game::Game;
+use std::{fs::File, path::Path};
+
+use crate::game::{level_info::LevelInfo, Game};
 use crate::{
     frame::{Frame, FrameEvent},
     state::Input,
@@ -11,7 +13,11 @@ pub struct GameFrame {
 
 impl GameFrame {
     pub fn new() -> Self {
-        GameFrame { game: Game::new() }
+        let level_info = load_level_info("level1");
+
+        GameFrame {
+            game: Game::from_level_info(level_info),
+        }
     }
 }
 
@@ -36,5 +42,15 @@ impl Frame for GameFrame {
         };
 
         events
+    }
+}
+
+fn load_level_info(level_name: &str) -> LevelInfo {
+    let mut path = Path::new("levels").join(level_name);
+    path.set_extension("json");
+
+    match File::open(path) {
+        Ok(file) => serde_json::from_reader(file).unwrap(),
+        Err(e) => panic!("Could not read level file: {}", e),
     }
 }

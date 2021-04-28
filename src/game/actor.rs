@@ -44,20 +44,11 @@ impl Actor {
         )
     }
 
-    pub fn new_guard(x: f32, y: f32) -> Self {
+    pub fn new_guard(x: f32, y: f32, patrol_points: Vec<Point2<f32>>) -> Self {
         Actor::new(
             Point2::new(x, y),
             Box::new(ConeFieldOfView::new(90.0, 300.0)),
-            Controller::new_guard(
-                vec![
-                    Point2::new(604.0, 96.0),
-                    Point2::new(659.0, 357.0),
-                    Point2::new(326.0, 511.0),
-                    Point2::new(65.0, 345.0),
-                    Point2::new(279.0, 72.0),
-                ],
-                0,
-            ),
+            Controller::new_guard(patrol_points, 0),
             1.3,
         )
     }

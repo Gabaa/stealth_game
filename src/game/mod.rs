@@ -3,14 +3,18 @@ pub mod collision_handling;
 pub mod controller;
 pub mod fov;
 pub mod game_map;
+pub mod level_info;
 pub mod polygon;
 pub mod raycast;
 pub mod renderer;
 
+use crate::game::{controller::Controller, polygon::Polygon};
+
 use self::{
-    actor::Actor, collision_handling::apply_physics_movement, game_map::GameMap, renderer::Renderer,
+    actor::Actor, collision_handling::apply_physics_movement, game_map::GameMap,
+    level_info::LevelInfo, renderer::Renderer,
 };
-use ggez::{event, Context, GameResult};
+use ggez::{event, nalgebra::Point2, Context, GameResult};
 
 pub struct Game {
     pub actors: Vec<Actor>,
@@ -20,14 +24,88 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new() -> Self {
-        let actors = vec![Actor::new_player(30.0, 40.0), Actor::new_guard(600.0, 50.0)];
+    pub fn from_level_info(level_info: LevelInfo) -> Self {
+        let mut actors = Vec::new();
+
+        // Add player
+        let (p_x, p_y) = level_info.player_data;
+        actors.push(Actor::new_player(p_x, p_y));
+
+        // Add guards
+        for ((g_x, g_y), patrol) in level_info.guard_data {
+            let patrol_points = patrol.iter().map(|(x, y)| Point2::new(*x, *y)).collect();
+            actors.push(Actor::new_guard(g_x, g_y, patrol_points));
+        }
+
+        // Make obstacles
+        let obstacles = level_info
+            .obstacle_data
+            .iter()
+            .map(|points| Polygon::new(points.iter().map(|(x, y)| Point2::new(*x, *y)).collect()))
+            .collect();
+
+        // Make end area
+        let end_area = Polygon::new(
+            level_info
+                .end_area_data
+                .iter()
+                .map(|(x, y)| Point2::new(*x, *y))
+                .collect(),
+        );
 
         Game {
             actors,
-            game_map: GameMap::new(),
+            game_map: GameMap::new(obstacles, end_area),
             player_won: false,
             renderer: Renderer::new(),
+        }
+    }
+
+    pub fn to_level_info(&self) -> LevelInfo {
+        // Get player data
+        let player = self
+            .actors
+            .iter()
+            .find(|actor| actor.is_player())
+            .expect("No player found");
+        let player_data = (player.pos.x, player.pos.y);
+
+        // Get guard data
+        let mut guard_data = Vec::new();
+        self.actors
+            .iter()
+            .filter(|actor| !actor.is_player())
+            .for_each(|guard| {
+                let pos = (guard.pos.x, guard.pos.y);
+                let patrol = match &guard.controller {
+                    Controller::Guard(con) => con.points.iter().map(|p| (p.x, p.y)).collect(),
+                    _ => unreachable!(),
+                };
+                guard_data.push((pos, patrol))
+            });
+
+        // Get obstacle data
+        let obstacle_data = self
+            .game_map
+            .obstacles
+            .iter()
+            .map(|p| p.verts.iter().map(|v| (v.x, v.y)).collect())
+            .collect();
+
+        // Get end_area_data
+        let end_area_data = self
+            .game_map
+            .end_area
+            .verts
+            .iter()
+            .map(|v| (v.x, v.y))
+            .collect();
+
+        LevelInfo {
+            player_data,
+            guard_data,
+            obstacle_data,
+            end_area_data,
         }
     }
 
