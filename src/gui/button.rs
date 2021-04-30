@@ -1,17 +1,15 @@
-use super::ui_layer::UIElement;
+use super::{label::Label, ui_layer::UIElement};
 use crate::frame::FrameEvent;
 use ggez::{
     event::MouseButton,
-    graphics::{
-        draw, Align, DrawMode, DrawParam, Drawable, Mesh, Rect, Scale, Text, TextFragment, WHITE,
-    },
+    graphics::{draw, DrawMode, DrawParam, Drawable, Mesh, Rect, WHITE},
     nalgebra::Point2,
     Context, GameResult,
 };
 
 pub struct Button {
     mesh: Mesh,
-    text: Option<(Text, Point2<f32>)>,
+    label: Option<Label>,
     handle_click: Box<dyn Fn() -> Option<FrameEvent>>,
 }
 
@@ -24,20 +22,22 @@ impl Button {
     ) -> GameResult<Self> {
         let mesh = Mesh::new_rectangle(ctx, DrawMode::stroke(3.0), bounds, WHITE)?;
 
-        let text = match button_text {
+        let label = match button_text {
             Some(text) => {
-                let mut text =
-                    Text::new(TextFragment::new(text).scale(Scale::uniform(bounds.h * 0.9)));
-                text.set_bounds(Point2::new(bounds.w, f32::INFINITY), Align::Center);
-                let dest = Point2::new(bounds.x, bounds.y);
-                Some((text, dest))
+                let text_bounds = Rect::new(
+                    bounds.x + 5.0,
+                    bounds.y + 5.0,
+                    bounds.w - 10.0,
+                    bounds.h - 10.0,
+                );
+                Some(Label::new(ctx, text, text_bounds))
             }
             None => None,
         };
 
         Ok(Button {
             mesh,
-            text,
+            label,
             handle_click: on_click,
         })
     }
@@ -47,8 +47,8 @@ impl UIElement for Button {
     fn draw(&self, ctx: &mut Context) -> GameResult {
         draw(ctx, &self.mesh, DrawParam::new())?;
 
-        match &self.text {
-            Some((text, dest)) => draw(ctx, text, DrawParam::default().dest(*dest)),
+        match &self.label {
+            Some(label) => label.draw(ctx),
             None => Ok(()),
         }
     }

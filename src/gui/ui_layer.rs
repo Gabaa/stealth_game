@@ -16,8 +16,8 @@ impl UILayer {
         UILayer { elements: vec![] }
     }
 
-    pub fn add(&mut self, element: Box<dyn UIElement>) {
-        self.elements.push(element);
+    pub fn add<T: 'static + UIElement>(&mut self, element: T) {
+        self.elements.push(Box::new(element));
     }
 
     pub fn draw(&self, ctx: &mut Context) -> GameResult {
