@@ -76,9 +76,19 @@ impl event::EventHandler for State {
     fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         self.receive_input(ctx, Input::MouseDown { button, x, y })
     }
+
+    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.receive_input(ctx, Input::MouseMotion { x, y })
+    }
+
+    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        self.receive_input(ctx, Input::MouseUp { button, x, y });
+    }
 }
 
 pub enum Input {
     MouseDown { button: MouseButton, x: f32, y: f32 },
+    MouseMotion { x: f32, y: f32 },
+    MouseUp { button: MouseButton, x: f32, y: f32 },
     KeyDown { key_code: KeyCode },
 }

@@ -12,18 +12,32 @@ use crate::game::{controller::Controller, polygon::Polygon};
 
 use self::{
     actor::Actor, collision_handling::apply_physics_movement, game_map::GameMap,
-    level_info::LevelInfo, renderer::Renderer,
+    level_info::LevelInfo,
 };
-use ggez::{event, nalgebra::Point2, Context, GameResult};
+use ggez::{event, nalgebra::Point2, Context};
 
 pub struct Game {
     pub actors: Vec<Actor>,
     pub game_map: GameMap,
     pub player_won: bool,
-    renderer: Renderer,
 }
 
 impl Game {
+    pub fn new() -> Self {
+        let end_area = Polygon::new(vec![
+            Point2::new(200.0, 200.0),
+            Point2::new(300.0, 200.0),
+            Point2::new(300.0, 300.0),
+            Point2::new(200.0, 300.0),
+        ]);
+
+        Game {
+            actors: vec![Actor::new_player(50.0, 50.0)],
+            game_map: GameMap::new(vec![], end_area),
+            player_won: false,
+        }
+    }
+
     pub fn from_level_info(level_info: LevelInfo) -> Self {
         let mut actors = Vec::new();
 
@@ -57,7 +71,6 @@ impl Game {
             actors,
             game_map: GameMap::new(obstacles, end_area),
             player_won: false,
-            renderer: Renderer::new(),
         }
     }
 
@@ -125,10 +138,6 @@ impl Game {
         for actor in &mut self.actors {
             actor.update_fov(&self.game_map);
         }
-    }
-
-    pub fn draw(&self, ctx: &mut Context) -> GameResult<()> {
-        self.renderer.render(ctx, &self)
     }
 }
 

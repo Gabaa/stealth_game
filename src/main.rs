@@ -1,3 +1,4 @@
+mod editor;
 mod frame;
 mod game;
 mod gui;

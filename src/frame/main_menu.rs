@@ -36,19 +36,20 @@ impl Frame for MainMenuFrame {
     }
 
     fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<FrameEvent> {
+        let mut events = Vec::new();
+
         match input {
-            Input::MouseDown { button, x, y } => self.ui_layer.mouse_press(ctx, button, x, y),
-            Input::KeyDown { key_code } => {
-                let mut events = Vec::new();
-
-                match key_code {
-                    KeyCode::Escape => events.push(FrameEvent::PopFrame),
-                    _ => {}
-                };
-
-                events
+            Input::MouseDown { button, x, y } => {
+                events.extend(self.ui_layer.mouse_press(ctx, button, x, y))
             }
-        }
+            Input::KeyDown { key_code } => match key_code {
+                KeyCode::Escape => events.push(FrameEvent::PopFrame),
+                _ => {}
+            },
+            _ => {}
+        };
+
+        events
     }
 }
 
@@ -76,7 +77,7 @@ fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         bounds,
         Some("Play"),
         Box::new(|| {
-            let frame = Box::new(GameFrame::new());
+            let frame = Box::new(GameFrame::new("level1"));
             Some(FrameEvent::PushFrame(frame))
         }),
     )
