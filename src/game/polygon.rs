@@ -1,4 +1,6 @@
-use ggez::nalgebra::Point2;
+use std::cmp::Ordering;
+
+use ggez::{graphics::Rect, nalgebra::Point2};
 
 pub struct Polygon {
     pub verts: Vec<Point2<f32>>,
@@ -13,6 +15,40 @@ impl Polygon {
     pub fn edge_iter(&self) -> EdgeIterator {
         let newvec = self.verts.clone();
         EdgeIterator::new(newvec)
+    }
+
+    pub fn bounding_box(&self) -> Rect {
+        let min_x = self
+            .verts
+            .iter()
+            .map(|point| point.x)
+            .min_by(|x1, x2| x1.partial_cmp(x2).unwrap_or(Ordering::Equal))
+            .unwrap();
+        let max_x = self
+            .verts
+            .iter()
+            .map(|point| point.x)
+            .max_by(|x1, x2| x1.partial_cmp(x2).unwrap_or(Ordering::Equal))
+            .unwrap();
+        let min_y = self
+            .verts
+            .iter()
+            .map(|point| point.y)
+            .min_by(|y1, y2| y1.partial_cmp(y2).unwrap_or(Ordering::Equal))
+            .unwrap();
+        let max_y = self
+            .verts
+            .iter()
+            .map(|point| point.y)
+            .max_by(|y1, y2| y1.partial_cmp(y2).unwrap_or(Ordering::Equal))
+            .unwrap();
+
+        Rect {
+            x: min_x,
+            y: min_y,
+            w: max_x - min_x,
+            h: max_y - min_y,
+        }
     }
 }
 

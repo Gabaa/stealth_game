@@ -2,13 +2,13 @@ use std::cmp::Ordering::Equal;
 
 use super::{Frame, FrameEvent};
 use crate::{
-    editor::SelectionHandler,
+    editor::{DraggableObject, SelectionHandler},
     game::{renderer::Renderer, Game},
     state::Input,
 };
 use ggez::{
     event::MouseButton,
-    nalgebra::{distance, Point2},
+    nalgebra::{distance, Point2, Vector2},
     Context, GameResult,
 };
 
@@ -28,44 +28,59 @@ impl EditorFrame {
     }
 
     fn handle_mouse_down(&mut self, mouse_pos: Point2<f32>) {
-        self.selection_handler.dragged_actor = match self.selection_handler.dragged_actor {
+        self.selection_handler.dragged_object = match self.selection_handler.dragged_object {
             Some(_) => None,
             None => {
-                let closest = self
-                    .game
-                    .actors
-                    .iter()
-                    .map(|a| (a, distance(&a.pos, &mouse_pos)))
-                    .enumerate()
-                    .min_by(|(_, (_, dist_a)), (_, (_, dist_b))| {
-                        dist_a.partial_cmp(dist_b).unwrap_or(Equal)
-                    });
-
-                match closest {
-                    Some((i, (actor, distance))) => {
-                        if distance < actor.radius {
-                            Some(i)
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None,
+                if let Some(i) = self.find_actor_at(mouse_pos) {
+                    Some(DraggableObject::Actor { index: i })
+                } else if self.has_end_area_at(mouse_pos) {
+                    Some(DraggableObject::EndArea)
+                } else {
+                    None
                 }
             }
         }
     }
 
-    fn handle_mouse_motion(&mut self, mouse_pos: Point2<f32>) {
-        match self.selection_handler.dragged_actor {
-            Some(i) => {
-                let selected = self
-                    .game
-                    .actors
-                    .iter_mut()
-                    .nth(i)
-                    .expect("could not find selected element");
-                selected.pos = mouse_pos;
-            }
+    /// Return the index of the actor under the mouse
+    fn find_actor_at(&self, mouse_pos: Point2<f32>) -> Option<usize> {
+        self.game
+            .actors
+            .iter()
+            .enumerate()
+            .map(|(i, actor)| (i, distance(&actor.pos, &mouse_pos) - actor.radius))
+            .filter(|(_, dist)| *dist < 0.0)
+            .min_by(|(_, dist_1), (_, dist_2)| dist_1.partial_cmp(&dist_2).unwrap_or(Equal))
+            .map(|(i, _)| i)
+    }
+
+    fn has_end_area_at(&self, mouse_pos: Point2<f32>) -> bool {
+        self.game
+            .game_map
+            .end_area
+            .bounding_box()
+            .contains(mouse_pos)
+    }
+
+    fn handle_mouse_motion(&mut self, mouse_delta: Vector2<f32>) {
+        match &self.selection_handler.dragged_object {
+            Some(object) => match object {
+                DraggableObject::Actor { index } => {
+                    let selected = self
+                        .game
+                        .actors
+                        .iter_mut()
+                        .nth(*index)
+                        .expect("could not find selected element");
+                    selected.pos += mouse_delta;
+                }
+                DraggableObject::EndArea => {
+                    for vertex in &mut self.game.game_map.end_area.verts {
+                        *vertex += mouse_delta;
+                    }
+                }
+            },
+
             None => {}
         }
     }
@@ -85,7 +100,7 @@ impl<'a> Frame for EditorFrame {
                     self.handle_mouse_down(Point2::new(x, y))
                 }
             }
-            Input::MouseMotion { x, y } => self.handle_mouse_motion(Point2::new(x, y)),
+            Input::MouseMotion { dx, dy } => self.handle_mouse_motion(Vector2::new(dx, dy)),
             _ => {}
         }
 
