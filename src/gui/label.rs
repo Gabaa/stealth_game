@@ -1,4 +1,4 @@
-use super::UIElement;
+use super::UiElement;
 use ggez::{
     graphics::{draw, DrawParam, Font, Rect, Scale, Text, TextFragment},
     nalgebra::Point2,
@@ -33,7 +33,7 @@ impl Label {
     }
 }
 
-impl UIElement for Label {
+impl UiElement for Label {
     fn draw(&self, ctx: &mut ggez::Context) -> GameResult {
         draw(ctx, &self.text, DrawParam::default().dest(self.dest))
     }

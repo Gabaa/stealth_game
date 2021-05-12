@@ -8,13 +8,16 @@ pub mod polygon;
 pub mod raycast;
 pub mod renderer;
 
-use crate::game::{controller::Controller, polygon::Polygon};
+use crate::{
+    frame::FrameEvent,
+    game::{controller::Controller, polygon::Polygon},
+};
 
 use self::{
     actor::Actor, collision_handling::apply_physics_movement, game_map::GameMap,
     level_info::LevelInfo,
 };
-use ggez::{event, nalgebra::Point2, Context};
+use ggez::{nalgebra::Point2, Context};
 
 pub struct Game {
     pub actors: Vec<Actor>,
@@ -122,22 +125,26 @@ impl Game {
         }
     }
 
-    pub fn tick(&mut self, ctx: &mut Context) {
+    pub fn tick(&mut self, ctx: &mut Context) -> Vec<FrameEvent> {
+        let mut events = vec![];
+
         apply_physics_movement(self, ctx);
 
         if self.player_won {
             println!("You won!");
-            event::quit(ctx);
+            events.push(FrameEvent::PopFrame);
         }
 
         if was_player_found(self) {
             println!("Player was discovered...");
-            event::quit(ctx);
+            events.push(FrameEvent::PopFrame);
         }
 
         for actor in &mut self.actors {
             actor.update_fov(&self.game_map);
         }
+
+        events
     }
 }
 

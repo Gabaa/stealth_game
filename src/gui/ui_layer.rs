@@ -1,22 +1,22 @@
 use crate::frame::FrameEvent;
 use ggez::{event::MouseButton, nalgebra::Point2, Context, GameResult};
 
-pub trait UIElement {
+pub trait UiElement {
     fn draw(&self, ctx: &mut Context) -> GameResult;
     fn contains_point(&self, ctx: &mut Context, point: &Point2<f32>) -> bool;
     fn on_click(&self, ctx: &mut Context, button: MouseButton) -> Option<FrameEvent>;
 }
 
-pub struct UILayer {
-    elements: Vec<Box<dyn UIElement>>,
+pub struct UiLayer {
+    elements: Vec<Box<dyn UiElement>>,
 }
 
-impl UILayer {
+impl UiLayer {
     pub fn new() -> Self {
-        UILayer { elements: vec![] }
+        UiLayer { elements: vec![] }
     }
 
-    pub fn add<T: 'static + UIElement>(&mut self, element: T) {
+    pub fn add<T: 'static + UiElement>(&mut self, element: T) {
         self.elements.push(Box::new(element));
     }
 

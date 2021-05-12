@@ -11,7 +11,7 @@ pub enum FrameEvent {
 }
 
 pub trait Frame {
-    fn tick(&mut self, ctx: &mut Context);
+    fn tick(&mut self, ctx: &mut Context) -> Vec<FrameEvent>;
     fn draw(&self, ctx: &mut Context) -> GameResult<()>;
     fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<FrameEvent>;
 }

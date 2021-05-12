@@ -1,6 +1,6 @@
 use super::{editor::EditorFrame, game::GameFrame, Frame, FrameEvent};
 use crate::{
-    gui::{button::Button, label::Label, UILayer},
+    gui::{button::Button, label::Label, UiLayer},
     state::Input,
 };
 use ggez::{
@@ -10,12 +10,12 @@ use ggez::{
 };
 
 pub struct MainMenuFrame {
-    ui_layer: UILayer,
+    ui_layer: UiLayer,
 }
 
 impl MainMenuFrame {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
-        let mut ui_layer = UILayer::new();
+        let mut ui_layer = UiLayer::new();
 
         let screen_coords = graphics::screen_coordinates(ctx);
 
@@ -29,7 +29,9 @@ impl MainMenuFrame {
 }
 
 impl Frame for MainMenuFrame {
-    fn tick(&mut self, _ctx: &mut Context) {}
+    fn tick(&mut self, _ctx: &mut Context) -> Vec<FrameEvent> {
+        Vec::new()
+    }
 
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         self.ui_layer.draw(ctx)

@@ -2,4 +2,4 @@ pub mod button;
 pub mod label;
 mod ui_layer;
 
-pub use ui_layer::{UIElement, UILayer};
+pub use ui_layer::{UiElement, UiLayer};

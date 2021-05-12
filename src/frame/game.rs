@@ -23,12 +23,12 @@ impl GameFrame {
 }
 
 impl Frame for GameFrame {
-    fn tick(&mut self, ctx: &mut Context) {
-        self.game.tick(ctx);
+    fn tick(&mut self, ctx: &mut Context) -> Vec<FrameEvent> {
+        self.game.tick(ctx)
     }
 
     fn draw(&self, ctx: &mut Context) -> GameResult {
-        self.renderer.render(ctx, &self.game)
+        self.renderer.render(ctx, &self.game, None)
     }
 
     fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<FrameEvent> {

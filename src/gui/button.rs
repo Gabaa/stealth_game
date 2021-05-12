@@ -1,4 +1,4 @@
-use super::{label::Label, ui_layer::UIElement};
+use super::{label::Label, ui_layer::UiElement};
 use crate::frame::FrameEvent;
 use ggez::{
     event::MouseButton,
@@ -43,7 +43,7 @@ impl Button {
     }
 }
 
-impl UIElement for Button {
+impl UiElement for Button {
     fn draw(&self, ctx: &mut Context) -> GameResult {
         draw(ctx, &self.mesh, DrawParam::new())?;
 
