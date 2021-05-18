@@ -10,7 +10,7 @@ use ggez::{
     Context, GameResult,
 };
 
-const GRID_SIZE: f32 = 50.0;
+pub const GRID_SIZE: f32 = 50.0;
 
 fn snap_to_grid(point: Point2<f32>) -> Point2<f32> {
     let x = (point.x / GRID_SIZE).round() * GRID_SIZE;

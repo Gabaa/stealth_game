@@ -1,8 +1,11 @@
-use crate::editor::{PolygonType, SelectionHandler, SelectionObject};
+use crate::{
+    editor::{PolygonType, SelectionHandler, SelectionObject},
+    frame::editor::GRID_SIZE,
+};
 
 use super::{actor::Actor, fov::FieldOfView, game_map::GameMap, Game};
 use ggez::{
-    graphics::{self, Color, Rect},
+    graphics::{self, draw, Color, DrawParam, Mesh, Rect},
     nalgebra::Point2,
     Context, GameResult,
 };
@@ -27,10 +30,56 @@ impl Renderer {
         selection_handler: Option<&SelectionHandler>,
     ) -> GameResult<()> {
         // TODO: These should re-use the meshes instead of remaking each time
+
+        if selection_handler.is_some() {
+            self.draw_grid(ctx)?;
+        }
         self.draw_all_fov(ctx, &game.actors)?;
         self.draw_obstacles(ctx, &game.game_map)?;
         self.draw_end_area(ctx, &game.game_map, selection_handler)?;
-        self.draw_actors(ctx, &game.actors)
+        self.draw_actors(ctx, &game.actors)?;
+
+        Ok(())
+    }
+
+    fn draw_grid(&self, ctx: &mut Context) -> GameResult {
+        let screen_coords = graphics::screen_coordinates(ctx);
+
+        let mut x = screen_coords.x;
+        while x < screen_coords.x + screen_coords.w {
+            let line = Mesh::new_line(
+                ctx,
+                &[
+                    Point2::new(x, screen_coords.y),
+                    Point2::new(x, screen_coords.y + screen_coords.h),
+                ],
+                1.0,
+                Color::from_rgb(127, 127, 127),
+            )?;
+
+            draw(ctx, &line, DrawParam::default())?;
+
+            x += GRID_SIZE;
+        }
+
+        let mut y = screen_coords.y;
+        while y < screen_coords.y + screen_coords.h {
+            let line = Mesh::new_line(
+                ctx,
+                &[
+                    Point2::new(screen_coords.x, y),
+                    Point2::new(screen_coords.x + screen_coords.w, y),
+                ],
+                1.0,
+                Color::from_rgb(127, 127, 127),
+            )?;
+
+            draw(ctx, &line, DrawParam::default())?;
+
+            y += GRID_SIZE;
+        }
+
+        Ok(())
     }
 
     fn draw_all_fov(&self, ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
@@ -46,12 +95,7 @@ impl Renderer {
         Ok(())
     }
 
-    fn draw_fov(
-        &self,
-        ctx: &mut Context,
-        fov: &dyn FieldOfView,
-        color: graphics::Color,
-    ) -> GameResult<()> {
+    fn draw_fov(&self, ctx: &mut Context, fov: &dyn FieldOfView, color: Color) -> GameResult<()> {
         let visible_area = match fov.get_visible_area() {
             Some(polygon) => polygon,
             None => return Ok(()),
@@ -183,7 +227,7 @@ impl Renderer {
             ctx,
             graphics::DrawMode::fill(),
             Rect::new(left, top, width, height),
-            graphics::Color::from_rgb(100, 100, 255),
+            Color::from_rgb(100, 100, 255),
         )?;
 
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())
