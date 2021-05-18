@@ -1,4 +1,4 @@
-use crate::editor::{SelectionHandler, SelectionObject};
+use crate::editor::{PolygonType, SelectionHandler, SelectionObject};
 
 use super::{actor::Actor, fov::FieldOfView, game_map::GameMap, Game};
 use ggez::{
@@ -92,12 +92,20 @@ impl Renderer {
         game_map: &GameMap,
         selection_handler: Option<&SelectionHandler>,
     ) -> GameResult<()> {
-        let color = match selection_handler {
-            Some(sh) => match sh.selected_object {
-                Some(SelectionObject::EndArea) => END_AREA_SELECTED,
-                _ => END_AREA,
-            },
-            _ => END_AREA,
+        let is_selected = matches!(
+            selection_handler,
+            Some(&SelectionHandler {
+                selected_object: Some(SelectionObject::Polygon {
+                    polygon_type: PolygonType::EndArea,
+                }),
+                ..
+            })
+        );
+
+        let color = if is_selected {
+            END_AREA_SELECTED
+        } else {
+            END_AREA
         };
 
         let mesh = graphics::Mesh::new_polygon(
@@ -107,7 +115,31 @@ impl Renderer {
             color,
         )?;
 
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+
+        // Draw vertices if selected
+        if is_selected {
+            self.draw_polygon_vertices(ctx, &game_map.end_area.verts)?;
+        }
+
+        Ok(())
+    }
+
+    fn draw_polygon_vertices(&self, ctx: &mut Context, vertices: &[Point2<f32>]) -> GameResult {
+        for vertex in vertices {
+            let mesh = graphics::Mesh::new_circle(
+                ctx,
+                graphics::DrawMode::fill(),
+                *vertex,
+                5.0,
+                0.01,
+                graphics::WHITE,
+            )?;
+
+            graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+        }
+
+        Ok(())
     }
 
     fn draw_actors(&self, ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {

@@ -6,7 +6,7 @@ pub mod game_map;
 pub mod level_info;
 pub mod polygon;
 pub mod raycast;
-pub mod renderer;
+pub mod rendering;
 
 use crate::{
     frame::FrameEvent,

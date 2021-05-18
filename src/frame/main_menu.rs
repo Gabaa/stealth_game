@@ -44,10 +44,9 @@ impl Frame for MainMenuFrame {
             Input::MouseDown { button, x, y } => {
                 events.extend(self.ui_layer.mouse_press(ctx, button, x, y))
             }
-            Input::KeyDown { key_code } => match key_code {
-                KeyCode::Escape => events.push(FrameEvent::PopFrame),
-                _ => {}
-            },
+            Input::KeyDown {
+                key_code: KeyCode::Escape,
+            } => events.push(FrameEvent::PopFrame),
             _ => {}
         };
 

@@ -1,4 +1,4 @@
-use crate::game::{level_info::LevelInfo, renderer::Renderer, Game};
+use crate::game::{level_info::LevelInfo, rendering::Renderer, Game};
 use crate::{
     frame::{Frame, FrameEvent},
     state::Input,
@@ -34,12 +34,11 @@ impl Frame for GameFrame {
     fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<FrameEvent> {
         let mut events = Vec::new();
 
-        match input {
-            Input::KeyDown { key_code } => match key_code {
-                KeyCode::Escape => events.push(FrameEvent::PopFrame),
-                _ => {}
-            },
-            _ => {}
+        if let Input::KeyDown {
+            key_code: KeyCode::Escape,
+        } = input
+        {
+            events.push(FrameEvent::PopFrame)
         };
 
         events

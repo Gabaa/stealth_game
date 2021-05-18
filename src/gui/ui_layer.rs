@@ -40,9 +40,8 @@ impl UiLayer {
         let mut events = Vec::new();
         for element in &self.elements {
             if element.contains_point(ctx, &point) {
-                match element.on_click(ctx, button) {
-                    Some(e) => events.push(e),
-                    _ => {}
+                if let Some(e) = element.on_click(ctx, button) {
+                    events.push(e)
                 }
             }
         }

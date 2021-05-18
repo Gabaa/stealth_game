@@ -1,21 +1,46 @@
-use crate::game::Game;
-use ggez::nalgebra::{distance, Point2, Vector2};
+use crate::game::{game_map::GameMap, polygon::Polygon, Game};
+use ggez::nalgebra::{distance, Point2};
 use std::cmp::Ordering::Equal;
 
-pub enum DragObject {
-    Actor { index: usize },
+#[derive(Debug, Clone, Copy)]
+pub enum PolygonType {
     EndArea,
+    Obstacle { index: usize },
+}
+
+impl PolygonType {
+    fn find(self, game_map: &mut GameMap) -> &mut Polygon {
+        match self {
+            Self::EndArea => &mut game_map.end_area,
+            Self::Obstacle { index } => game_map
+                .obstacles
+                .get_mut(index)
+                .unwrap_or_else(|| panic!("Could not find obstacle at index {}", index)),
+        }
+    }
+}
+
+pub enum DragObject {
+    Actor {
+        index: usize,
+    },
+    Polygon {
+        polygon_type: PolygonType,
+    },
+    PolygonVertex {
+        polygon_type: PolygonType,
+        index: usize,
+    },
 }
 
 #[derive(Debug)]
 pub enum SelectionObject {
     Actor { index: usize },
-    EndArea,
+    Polygon { polygon_type: PolygonType },
 }
 
 pub struct SelectionHandler {
     dragged_object: Option<DragObject>,
-    drag_distance: f32,
     pub selected_object: Option<SelectionObject>,
 }
 
@@ -23,19 +48,45 @@ impl SelectionHandler {
     pub fn new() -> Self {
         SelectionHandler {
             dragged_object: None,
-            drag_distance: 0.0,
             selected_object: None,
         }
     }
 
     pub fn handle_mouse_down(&mut self, game: &mut Game, mouse_pos: Point2<f32>) {
-        self.dragged_object = if let Some(i) = self.find_actor_at(game, mouse_pos) {
-            Some(DragObject::Actor { index: i })
-        } else if self.has_end_area_at(game, mouse_pos) {
-            Some(DragObject::EndArea)
-        } else {
-            None
+        self.dragged_object = self.find_object_to_drag(game, mouse_pos);
+    }
+
+    fn find_object_to_drag(&self, game: &mut Game, mouse_pos: Point2<f32>) -> Option<DragObject> {
+        // Check if there is a draggable vertex under the mouse
+        if let Some(SelectionObject::Polygon { polygon_type }) = self.selected_object {
+            let polygon = polygon_type.find(&mut game.game_map);
+            if let Some(i) = self.find_polygon_vertex_at(polygon, mouse_pos) {
+                return Some(DragObject::PolygonVertex {
+                    polygon_type,
+                    index: i,
+                });
+            }
         }
+
+        if let Some(i) = self.find_actor_at(game, mouse_pos) {
+            return Some(DragObject::Actor { index: i });
+        }
+
+        if self.has_end_area_at(game, mouse_pos) {
+            return Some(DragObject::Polygon {
+                polygon_type: PolygonType::EndArea,
+            });
+        }
+
+        None
+    }
+
+    /// Return the index of the polygon vertex under the mouse if one exists, otherwise None
+    fn find_polygon_vertex_at(&self, polygon: &Polygon, mouse_pos: Point2<f32>) -> Option<usize> {
+        polygon
+            .verts
+            .iter()
+            .position(|v| distance(v, &mouse_pos) <= 10.0)
     }
 
     /// Return the index of the actor under the mouse
@@ -53,22 +104,42 @@ impl SelectionHandler {
         game.game_map.end_area.bounding_box().contains(mouse_pos)
     }
 
-    pub fn handle_mouse_motion(&mut self, game: &mut Game, mouse_delta: Vector2<f32>) {
+    pub fn handle_mouse_motion(&mut self, game: &mut Game, mouse_pos: Point2<f32>) {
         match &self.dragged_object {
             Some(object) => {
-                self.drag_distance += mouse_delta.norm();
                 match object {
                     DragObject::Actor { index } => {
                         let selected = game
                             .actors
-                            .iter_mut()
-                            .nth(*index)
+                            .get_mut(*index)
                             .expect("could not find selected element");
-                        selected.pos += mouse_delta;
+                        selected.pos = mouse_pos;
                     }
-                    DragObject::EndArea => {
-                        for vertex in &mut game.game_map.end_area.verts {
+                    DragObject::Polygon { polygon_type } => {
+                        let polygon = polygon_type.find(&mut game.game_map);
+
+                        // Get centroid of polygon (avg of points)
+                        let num_points = polygon.verts.len() as f32;
+                        let (acc_x, acc_y) = polygon
+                            .verts
+                            .iter()
+                            .map(|v| (v.x, v.y))
+                            .reduce(|(x1, y1), (x2, y2)| (x1 + x2, y1 + y2))
+                            .expect("no verts found");
+                        let centroid = Point2::new(acc_x / num_points, acc_y / num_points);
+
+                        let mouse_delta = mouse_pos - centroid;
+                        for vertex in polygon_type.find(&mut game.game_map).verts.iter_mut() {
                             *vertex += mouse_delta;
+                        }
+                    }
+                    DragObject::PolygonVertex {
+                        polygon_type,
+                        index,
+                    } => {
+                        let polygon = polygon_type.find(&mut game.game_map);
+                        if let Some(vertex) = polygon.verts.get_mut(*index) {
+                            *vertex = mouse_pos
                         }
                     }
                 }
@@ -78,21 +149,17 @@ impl SelectionHandler {
     }
 
     pub fn handle_mouse_up(&mut self, _game: &mut Game) {
-        self.selected_object = if self.drag_distance < 5.0 {
-            match self.dragged_object {
-                Some(DragObject::Actor { index }) => Some(SelectionObject::Actor { index }),
-                Some(DragObject::EndArea) => Some(SelectionObject::EndArea),
-                None => None,
+        self.selected_object = match self.dragged_object {
+            Some(DragObject::Actor { index }) => Some(SelectionObject::Actor { index }),
+            Some(DragObject::Polygon { polygon_type }) => {
+                Some(SelectionObject::Polygon { polygon_type })
             }
-        } else {
-            None
+            Some(DragObject::PolygonVertex { polygon_type, .. }) => {
+                Some(SelectionObject::Polygon { polygon_type })
+            }
+            _ => None,
         };
 
         self.dragged_object = None;
-        self.drag_distance = 0.0;
-
-        if self.selected_object.is_some() {
-            println!("{:?}", self.selected_object.as_ref().unwrap())
-        }
     }
 }
