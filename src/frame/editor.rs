@@ -2,10 +2,12 @@ use super::{Frame, FrameEvent};
 use crate::{
     editor::SelectionHandler,
     game::{rendering::Renderer, Game},
+    gui::{button::Button, UiLayer},
     state::Input,
 };
 use ggez::{
     event::{KeyCode, MouseButton},
+    graphics::{self, Rect},
     nalgebra::Point2,
     Context, GameResult,
 };
@@ -21,18 +23,33 @@ fn snap_to_grid(point: Point2<f32>) -> Point2<f32> {
 pub struct EditorFrame {
     game: Game,
     renderer: Renderer,
+    ui: UiLayer,
     selection_handler: SelectionHandler,
     snap_to_grid: bool,
 }
 
 impl EditorFrame {
-    pub fn new() -> Self {
-        EditorFrame {
+    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+        let mut ui = UiLayer::new();
+        let screen_coords = graphics::screen_coordinates(ctx);
+
+        let button_bounds = Rect::new(screen_coords.x + screen_coords.w - 160.0, 10.0, 150.0, 30.0);
+        let button = Button::new(
+            ctx,
+            button_bounds,
+            Some("Example button"),
+            Box::new(|_| None),
+        )?;
+
+        ui.add(button);
+
+        Ok(EditorFrame {
             game: Game::new(),
             renderer: Renderer::new(),
+            ui,
             selection_handler: SelectionHandler::new(),
             snap_to_grid: false,
-        }
+        })
     }
 }
 
@@ -43,7 +60,9 @@ impl Frame for EditorFrame {
 
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         self.renderer
-            .render(ctx, &self.game, Some(&self.selection_handler))
+            .render(ctx, &self.game, Some(&self.selection_handler))?;
+
+        self.ui.draw(ctx)
     }
 
     fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<FrameEvent> {

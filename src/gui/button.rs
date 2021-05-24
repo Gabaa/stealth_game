@@ -10,7 +10,7 @@ use ggez::{
 pub struct Button {
     mesh: Mesh,
     label: Option<Label>,
-    handle_click: Box<dyn Fn() -> Option<FrameEvent>>,
+    handle_click: Box<dyn Fn(&mut Context) -> Option<FrameEvent>>,
 }
 
 impl Button {
@@ -18,7 +18,7 @@ impl Button {
         ctx: &mut Context,
         bounds: Rect,
         button_text: Option<&str>,
-        on_click: Box<dyn Fn() -> Option<FrameEvent>>,
+        on_click: Box<dyn Fn(&mut Context) -> Option<FrameEvent>>,
     ) -> GameResult<Self> {
         let mesh = Mesh::new_rectangle(ctx, DrawMode::stroke(3.0), bounds, WHITE)?;
 
@@ -60,9 +60,9 @@ impl UiElement for Button {
         }
     }
 
-    fn on_click(&self, _ctx: &mut Context, button: MouseButton) -> Option<FrameEvent> {
+    fn on_click(&self, ctx: &mut Context, button: MouseButton) -> Option<FrameEvent> {
         match button {
-            MouseButton::Left => (self.handle_click)(),
+            MouseButton::Left => (self.handle_click)(ctx),
             _ => None,
         }
     }

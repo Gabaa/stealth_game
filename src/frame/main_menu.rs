@@ -77,7 +77,7 @@ fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         ctx,
         bounds,
         Some("Play"),
-        Box::new(|| {
+        Box::new(|_| {
             let frame = Box::new(GameFrame::new("level1"));
             Some(FrameEvent::PushFrame(frame))
         }),
@@ -96,9 +96,9 @@ fn editor_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         ctx,
         bounds,
         Some("Level editor"),
-        Box::new(|| {
-            let frame = Box::new(EditorFrame::new());
-            Some(FrameEvent::PushFrame(frame))
+        Box::new(|ctx| {
+            let frame = EditorFrame::new(ctx).ok()?;
+            Some(FrameEvent::PushFrame(Box::new(frame)))
         }),
     )
 }
@@ -115,6 +115,6 @@ fn quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         ctx,
         bounds,
         Some("Quit"),
-        Box::new(|| Some(FrameEvent::PopFrame)),
+        Box::new(|_| Some(FrameEvent::PopFrame)),
     )
 }
