@@ -69,14 +69,10 @@ impl View for EditorView {
         let mut events = vec![];
 
         match input {
-            Input::MouseDown {
-                button: MouseButton::Left,
-                x,
-                y,
-            } => {
+            Input::MouseDown { button, x, y } => {
                 let pos = Point2::new(x, y);
                 self.selection_handler
-                    .handle_mouse_down(&mut self.game, pos)
+                    .handle_mouse_down(&mut self.game, button, pos)
             }
             Input::MouseMotion { x, y } => {
                 let mouse_pos = Point2::new(x, y);
@@ -90,10 +86,9 @@ impl View for EditorView {
                     },
                 );
             }
-            Input::MouseUp {
-                button: MouseButton::Left,
-                ..
-            } => self.selection_handler.handle_mouse_up(&mut self.game),
+            Input::MouseUp { button, .. } => self
+                .selection_handler
+                .handle_mouse_up(&mut self.game, button),
             Input::KeyDown { key_code } => match key_code {
                 KeyCode::Escape => events.push(ViewEvent::PopView),
                 KeyCode::LControl => self.snap_to_grid = true,

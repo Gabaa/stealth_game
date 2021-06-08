@@ -1,5 +1,8 @@
 use crate::game::{game_map::GameMap, polygon::Polygon, Game};
-use ggez::nalgebra::{distance, Point2};
+use ggez::{
+    event::MouseButton,
+    nalgebra::{distance, Point2},
+};
 use std::cmp::Ordering::Equal;
 
 #[derive(Debug, Clone, Copy)]
@@ -52,8 +55,17 @@ impl SelectionHandler {
         }
     }
 
-    pub fn handle_mouse_down(&mut self, game: &mut Game, mouse_pos: Point2<f32>) {
-        self.dragged_object = self.find_object_to_drag(game, mouse_pos);
+    pub fn handle_mouse_down(
+        &mut self,
+        game: &mut Game,
+        button: MouseButton,
+        mouse_pos: Point2<f32>,
+    ) {
+        match button {
+            MouseButton::Left => self.dragged_object = self.find_object_to_drag(game, mouse_pos),
+            MouseButton::Right => self.delete_object(game, mouse_pos),
+            _ => {}
+        }
     }
 
     fn find_object_to_drag(&self, game: &mut Game, mouse_pos: Point2<f32>) -> Option<DragObject> {
@@ -79,6 +91,19 @@ impl SelectionHandler {
         }
 
         None
+    }
+
+    fn delete_object(&mut self, game: &mut Game, mouse_pos: Point2<f32>) {
+        if let Some(SelectionObject::Polygon { polygon_type }) = self.selected_object {
+            let polygon = polygon_type.find(&mut game.game_map);
+
+            if polygon.verts.len() > 3 {
+                if let Some(i) = self.find_polygon_vertex_at(polygon, mouse_pos) {
+                    polygon.verts.remove(i);
+                    return;
+                }
+            }
+        }
     }
 
     /// Return the index of the polygon vertex under the mouse if one exists, otherwise None
@@ -148,7 +173,14 @@ impl SelectionHandler {
         }
     }
 
-    pub fn handle_mouse_up(&mut self, _game: &mut Game) {
+    pub fn handle_mouse_up(&mut self, _game: &mut Game, button: MouseButton) {
+        match button {
+            MouseButton::Left => self.end_drag(),
+            _ => {}
+        }
+    }
+
+    fn end_drag(&mut self) {
         self.selected_object = match self.dragged_object {
             Some(DragObject::Actor { index }) => Some(SelectionObject::Actor { index }),
             Some(DragObject::Polygon { polygon_type }) => {
