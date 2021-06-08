@@ -96,8 +96,8 @@ fn editor_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         ctx,
         bounds,
         Some("Level editor"),
-        Box::new(|ctx| {
-            let view = EditorView::new(ctx).ok()?;
+        Box::new(|_ctx| {
+            let view = EditorView::new().ok()?;
             Some(ViewEvent::PushView(Box::new(view)))
         }),
     )

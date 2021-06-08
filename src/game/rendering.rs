@@ -15,6 +15,7 @@ pub const END_AREA_SELECTED: Color = Color::new(0.5, 1.0, 0.5, 0.1);
 pub const PLAYER_VISIBLE_AREA: Color = Color::new(1.0, 1.0, 1.0, 0.1);
 pub const GUARD_VISIBLE_AREA: Color = Color::new(1.0, 0.0, 0.0, 0.1);
 pub const OBSTACLE: Color = Color::new(0.4, 0.4, 0.4, 1.0);
+pub const OBSTACLE_SELECTED: Color = Color::new(0.5, 0.5, 0.5, 1.0);
 
 pub struct Renderer {}
 
@@ -35,7 +36,7 @@ impl Renderer {
             self.draw_grid(ctx)?;
         }
         self.draw_all_fov(ctx, &game.actors)?;
-        self.draw_obstacles(ctx, &game.game_map)?;
+        self.draw_obstacles(ctx, &game.game_map, selection_handler)?;
         self.draw_end_area(ctx, &game.game_map, selection_handler)?;
         self.draw_actors(ctx, &game.actors)?;
 
@@ -115,16 +116,42 @@ impl Renderer {
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())
     }
 
-    fn draw_obstacles(&self, ctx: &mut Context, game_map: &GameMap) -> GameResult<()> {
-        for polygon in &game_map.obstacles {
+    fn draw_obstacles(
+        &self,
+        ctx: &mut Context,
+        game_map: &GameMap,
+        selection_handler: Option<&SelectionHandler>,
+    ) -> GameResult<()> {
+        for (i, polygon) in game_map.obstacles.iter().enumerate() {
+            let is_selected = match selection_handler {
+                Some(&SelectionHandler {
+                    selected_object:
+                        Some(SelectionObject::Polygon {
+                            polygon_type: PolygonType::Obstacle { index },
+                        }),
+                    ..
+                }) if index == i => true,
+                _ => false,
+            };
+
+            let color = if is_selected {
+                OBSTACLE_SELECTED
+            } else {
+                OBSTACLE
+            };
+
             let mesh = graphics::Mesh::new_polygon(
                 ctx,
-                graphics::DrawMode::stroke(3.0),
+                graphics::DrawMode::fill(),
                 &polygon.verts,
-                OBSTACLE,
+                color,
             )?;
 
             graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+
+            if is_selected {
+                self.draw_polygon_vertices(ctx, &polygon.verts)?;
+            }
         }
 
         Ok(())

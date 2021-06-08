@@ -90,6 +90,12 @@ impl SelectionHandler {
             });
         }
 
+        if let Some(i) = self.find_polygon_at(game, mouse_pos) {
+            return Some(DragObject::Polygon {
+                polygon_type: PolygonType::Obstacle { index: i },
+            });
+        }
+
         None
     }
 
@@ -126,7 +132,16 @@ impl SelectionHandler {
     }
 
     fn has_end_area_at(&self, game: &mut Game, mouse_pos: Point2<f32>) -> bool {
-        game.game_map.end_area.bounding_box().contains(mouse_pos)
+        game.game_map.end_area.contains(mouse_pos)
+    }
+
+    fn find_polygon_at(&self, game: &mut Game, mouse_pos: Point2<f32>) -> Option<usize> {
+        game.game_map
+            .obstacles
+            .iter()
+            .enumerate()
+            .find(|(_, obstacle)| obstacle.contains(mouse_pos))
+            .map(|(i, _)| i)
     }
 
     pub fn handle_mouse_motion(&mut self, game: &mut Game, mouse_pos: Point2<f32>) {

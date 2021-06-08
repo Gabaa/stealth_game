@@ -17,6 +17,10 @@ impl Polygon {
         EdgeIterator::new(newvec)
     }
 
+    pub fn contains(&self, mouse_pos: Point2<f32>) -> bool {
+        self.bounding_box().contains(mouse_pos)
+    }
+
     pub fn bounding_box(&self) -> Rect {
         let min_x = self
             .verts

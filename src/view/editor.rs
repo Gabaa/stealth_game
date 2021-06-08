@@ -1,16 +1,10 @@
 use super::{View, ViewEvent};
 use crate::{
     editor::SelectionHandler,
-    game::{rendering::Renderer, Game},
-    gui::{button::Button, UiLayer},
+    game::{polygon::Polygon, rendering::Renderer, Game},
     state::Input,
 };
-use ggez::{
-    event::{KeyCode, MouseButton},
-    graphics::{self, Rect},
-    nalgebra::Point2,
-    Context, GameResult,
-};
+use ggez::{event::KeyCode, nalgebra::Point2, Context, GameResult};
 
 pub const GRID_SIZE: f32 = 50.0;
 
@@ -23,33 +17,28 @@ fn snap_to_grid(point: Point2<f32>) -> Point2<f32> {
 pub struct EditorView {
     game: Game,
     renderer: Renderer,
-    ui: UiLayer,
     selection_handler: SelectionHandler,
     snap_to_grid: bool,
 }
 
 impl EditorView {
-    pub fn new(ctx: &mut Context) -> GameResult<Self> {
-        let mut ui = UiLayer::new();
-        let screen_coords = graphics::screen_coordinates(ctx);
-
-        let button_bounds = Rect::new(screen_coords.x + screen_coords.w - 160.0, 10.0, 150.0, 30.0);
-        let button = Button::new(
-            ctx,
-            button_bounds,
-            Some("Example button"),
-            Box::new(|_| None),
-        )?;
-
-        ui.add(button);
-
+    pub fn new() -> GameResult<Self> {
         Ok(EditorView {
             game: Game::new(),
             renderer: Renderer::new(),
-            ui,
             selection_handler: SelectionHandler::new(),
             snap_to_grid: false,
         })
+    }
+
+    fn create_obstacle(&mut self) {
+        let obstacle = Polygon::new(vec![
+            Point2::new(100.0, 100.0),
+            Point2::new(200.0, 100.0),
+            Point2::new(200.0, 200.0),
+            Point2::new(100.0, 200.0),
+        ]);
+        self.game.game_map.obstacles.push(obstacle);
     }
 }
 
@@ -60,9 +49,7 @@ impl View for EditorView {
 
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         self.renderer
-            .render(ctx, &self.game, Some(&self.selection_handler))?;
-
-        self.ui.draw(ctx)
+            .render(ctx, &self.game, Some(&self.selection_handler))
     }
 
     fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<ViewEvent> {
@@ -92,6 +79,7 @@ impl View for EditorView {
             Input::KeyDown { key_code } => match key_code {
                 KeyCode::Escape => events.push(ViewEvent::PopView),
                 KeyCode::LControl => self.snap_to_grid = true,
+                KeyCode::O => self.create_obstacle(),
                 _ => {}
             },
             Input::KeyUp {
