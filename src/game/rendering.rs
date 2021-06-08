@@ -1,6 +1,6 @@
 use crate::{
     editor::{PolygonType, SelectionHandler, SelectionObject},
-    frame::editor::GRID_SIZE,
+    view::editor::GRID_SIZE,
 };
 
 use super::{actor::Actor, fov::FieldOfView, game_map::GameMap, Game};

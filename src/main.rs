@@ -1,5 +1,5 @@
 mod editor;
-mod frame;
+mod view;
 mod game;
 mod gui;
 mod state;

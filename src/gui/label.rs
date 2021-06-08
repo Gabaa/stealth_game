@@ -50,7 +50,7 @@ impl UiElement for Label {
         &self,
         _ctx: &mut ggez::Context,
         _button: ggez::event::MouseButton,
-    ) -> Option<crate::frame::FrameEvent> {
+    ) -> Option<crate::view::ViewEvent> {
         None
     }
 }

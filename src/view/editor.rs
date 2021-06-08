@@ -1,4 +1,4 @@
-use super::{Frame, FrameEvent};
+use super::{View, ViewEvent};
 use crate::{
     editor::SelectionHandler,
     game::{rendering::Renderer, Game},
@@ -20,7 +20,7 @@ fn snap_to_grid(point: Point2<f32>) -> Point2<f32> {
     Point2::new(x, y)
 }
 
-pub struct EditorFrame {
+pub struct EditorView {
     game: Game,
     renderer: Renderer,
     ui: UiLayer,
@@ -28,7 +28,7 @@ pub struct EditorFrame {
     snap_to_grid: bool,
 }
 
-impl EditorFrame {
+impl EditorView {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut ui = UiLayer::new();
         let screen_coords = graphics::screen_coordinates(ctx);
@@ -43,7 +43,7 @@ impl EditorFrame {
 
         ui.add(button);
 
-        Ok(EditorFrame {
+        Ok(EditorView {
             game: Game::new(),
             renderer: Renderer::new(),
             ui,
@@ -53,8 +53,8 @@ impl EditorFrame {
     }
 }
 
-impl Frame for EditorFrame {
-    fn tick(&mut self, _ctx: &mut Context) -> Vec<FrameEvent> {
+impl View for EditorView {
+    fn tick(&mut self, _ctx: &mut Context) -> Vec<ViewEvent> {
         Vec::new()
     }
 
@@ -65,7 +65,7 @@ impl Frame for EditorFrame {
         self.ui.draw(ctx)
     }
 
-    fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<FrameEvent> {
+    fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<ViewEvent> {
         let mut events = vec![];
 
         match input {
@@ -95,7 +95,7 @@ impl Frame for EditorFrame {
                 ..
             } => self.selection_handler.handle_mouse_up(&mut self.game),
             Input::KeyDown { key_code } => match key_code {
-                KeyCode::Escape => events.push(FrameEvent::PopFrame),
+                KeyCode::Escape => events.push(ViewEvent::PopView),
                 KeyCode::LControl => self.snap_to_grid = true,
                 _ => {}
             },
@@ -111,7 +111,7 @@ impl Frame for EditorFrame {
 
 #[cfg(test)]
 mod tests {
-    use crate::frame::editor::snap_to_grid;
+    use crate::view::editor::snap_to_grid;
     use ggez::nalgebra::Point2;
 
     #[test]

@@ -9,8 +9,8 @@ pub mod raycast;
 pub mod rendering;
 
 use crate::{
-    frame::FrameEvent,
     game::{controller::Controller, polygon::Polygon},
+    view::ViewEvent,
 };
 
 use self::{
@@ -125,19 +125,19 @@ impl Game {
         }
     }
 
-    pub fn tick(&mut self, ctx: &mut Context) -> Vec<FrameEvent> {
+    pub fn tick(&mut self, ctx: &mut Context) -> Vec<ViewEvent> {
         let mut events = vec![];
 
         apply_physics_movement(self, ctx);
 
         if self.player_won {
             println!("You won!");
-            events.push(FrameEvent::PopFrame);
+            events.push(ViewEvent::PopView);
         }
 
         if was_player_found(self) {
             println!("Player was discovered...");
-            events.push(FrameEvent::PopFrame);
+            events.push(ViewEvent::PopView);
         }
 
         for actor in &mut self.actors {

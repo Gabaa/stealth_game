@@ -1,4 +1,4 @@
-use super::{editor::EditorFrame, game::GameFrame, Frame, FrameEvent};
+use super::{editor::EditorView, game::GameView, View, ViewEvent};
 use crate::{
     gui::{button::Button, label::Label, UiLayer},
     state::Input,
@@ -9,11 +9,11 @@ use ggez::{
     Context, GameResult,
 };
 
-pub struct MainMenuFrame {
+pub struct MainMenuView {
     ui_layer: UiLayer,
 }
 
-impl MainMenuFrame {
+impl MainMenuView {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut ui_layer = UiLayer::new();
 
@@ -24,12 +24,12 @@ impl MainMenuFrame {
         ui_layer.add(editor_button(ctx, screen_coords)?);
         ui_layer.add(quit_button(ctx, screen_coords)?);
 
-        Ok(MainMenuFrame { ui_layer })
+        Ok(MainMenuView { ui_layer })
     }
 }
 
-impl Frame for MainMenuFrame {
-    fn tick(&mut self, _ctx: &mut Context) -> Vec<FrameEvent> {
+impl View for MainMenuView {
+    fn tick(&mut self, _ctx: &mut Context) -> Vec<ViewEvent> {
         Vec::new()
     }
 
@@ -37,7 +37,7 @@ impl Frame for MainMenuFrame {
         self.ui_layer.draw(ctx)
     }
 
-    fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<FrameEvent> {
+    fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<ViewEvent> {
         let mut events = Vec::new();
 
         match input {
@@ -46,7 +46,7 @@ impl Frame for MainMenuFrame {
             }
             Input::KeyDown {
                 key_code: KeyCode::Escape,
-            } => events.push(FrameEvent::PopFrame),
+            } => events.push(ViewEvent::PopView),
             _ => {}
         };
 
@@ -78,8 +78,8 @@ fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         bounds,
         Some("Play"),
         Box::new(|_| {
-            let frame = Box::new(GameFrame::new("level1"));
-            Some(FrameEvent::PushFrame(frame))
+            let view = Box::new(GameView::new("level1"));
+            Some(ViewEvent::PushView(view))
         }),
     )
 }
@@ -97,8 +97,8 @@ fn editor_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         bounds,
         Some("Level editor"),
         Box::new(|ctx| {
-            let frame = EditorFrame::new(ctx).ok()?;
-            Some(FrameEvent::PushFrame(Box::new(frame)))
+            let view = EditorView::new(ctx).ok()?;
+            Some(ViewEvent::PushView(Box::new(view)))
         }),
     )
 }
@@ -115,6 +115,6 @@ fn quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         ctx,
         bounds,
         Some("Quit"),
-        Box::new(|_| Some(FrameEvent::PopFrame)),
+        Box::new(|_| Some(ViewEvent::PopView)),
     )
 }
