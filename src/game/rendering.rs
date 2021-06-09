@@ -10,6 +10,7 @@ use ggez::{
     Context, GameResult,
 };
 
+pub const GRID_LINE: Color = Color::new(0.3, 0.3, 0.3, 1.0);
 pub const END_AREA: Color = Color::new(0.0, 1.0, 0.0, 0.1);
 pub const END_AREA_SELECTED: Color = Color::new(0.5, 1.0, 0.5, 0.1);
 pub const PLAYER_VISIBLE_AREA: Color = Color::new(1.0, 1.0, 1.0, 0.1);
@@ -55,7 +56,7 @@ impl Renderer {
                     Point2::new(x, screen_coords.y + screen_coords.h),
                 ],
                 1.0,
-                Color::from_rgb(127, 127, 127),
+                GRID_LINE,
             )?;
 
             draw(ctx, &line, DrawParam::default())?;
@@ -72,7 +73,7 @@ impl Renderer {
                     Point2::new(screen_coords.x + screen_coords.w, y),
                 ],
                 1.0,
-                Color::from_rgb(127, 127, 127),
+                GRID_LINE,
             )?;
 
             draw(ctx, &line, DrawParam::default())?;
