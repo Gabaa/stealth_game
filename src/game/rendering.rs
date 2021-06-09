@@ -123,16 +123,15 @@ impl Renderer {
         selection_handler: Option<&SelectionHandler>,
     ) -> GameResult<()> {
         for (i, polygon) in game_map.obstacles.iter().enumerate() {
-            let is_selected = match selection_handler {
+            let is_selected = matches!(selection_handler,
                 Some(&SelectionHandler {
                     selected_object:
                         Some(SelectionObject::Polygon {
                             polygon_type: PolygonType::Obstacle { index },
                         }),
                     ..
-                }) if index == i => true,
-                _ => false,
-            };
+                }) if index == i,
+            );
 
             let color = if is_selected {
                 OBSTACLE_SELECTED

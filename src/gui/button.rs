@@ -1,5 +1,4 @@
 use super::{label::Label, ui_layer::UiElement};
-use crate::view::ViewEvent;
 use ggez::{
     event::MouseButton,
     graphics::{draw, DrawMode, DrawParam, Drawable, Mesh, Rect, WHITE},
@@ -7,18 +6,18 @@ use ggez::{
     Context, GameResult,
 };
 
-pub struct Button {
+pub struct Button<T> {
     mesh: Mesh,
-    label: Option<Label>,
-    handle_click: Box<dyn Fn(&mut Context) -> Option<ViewEvent>>,
+    label: Option<Label<T>>,
+    handle_click: Box<dyn Fn(&mut Context) -> Option<T>>,
 }
 
-impl Button {
+impl<T> Button<T> {
     pub fn new(
         ctx: &mut Context,
         bounds: Rect,
         button_text: Option<&str>,
-        on_click: Box<dyn Fn(&mut Context) -> Option<ViewEvent>>,
+        on_click: Box<dyn Fn(&mut Context) -> Option<T>>,
     ) -> GameResult<Self> {
         let mesh = Mesh::new_rectangle(ctx, DrawMode::stroke(3.0), bounds, WHITE)?;
 
@@ -43,7 +42,7 @@ impl Button {
     }
 }
 
-impl UiElement for Button {
+impl<T> UiElement<T> for Button<T> {
     fn draw(&self, ctx: &mut Context) -> GameResult {
         draw(ctx, &self.mesh, DrawParam::new())?;
 
@@ -60,7 +59,7 @@ impl UiElement for Button {
         }
     }
 
-    fn on_click(&self, ctx: &mut Context, button: MouseButton) -> Option<ViewEvent> {
+    fn on_click(&self, ctx: &mut Context, button: MouseButton) -> Option<T> {
         match button {
             MouseButton::Left => (self.handle_click)(ctx),
             _ => None,

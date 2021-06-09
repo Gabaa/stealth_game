@@ -14,6 +14,7 @@ impl State {
         })
     }
 
+    #[allow(clippy::borrowed_box)]
     fn top_view(&self) -> Option<&Box<dyn View>> {
         self.view_stack.last()
     }

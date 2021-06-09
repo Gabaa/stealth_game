@@ -1,16 +1,20 @@
+use std::marker::PhantomData;
+
 use super::UiElement;
 use ggez::{
+    event::MouseButton,
     graphics::{draw, DrawParam, Font, Rect, Scale, Text, TextFragment},
     nalgebra::Point2,
     Context, GameResult,
 };
 
-pub struct Label {
+pub struct Label<T> {
     text: Text,
     dest: Point2<f32>,
+    phantom: PhantomData<T>,
 }
 
-impl Label {
+impl<T> Label<T> {
     pub fn new(ctx: &mut Context, label_text: &str, bounds: Rect) -> Self {
         let dest = Point2::new(bounds.x, bounds.y);
         let mut text = Text::new(TextFragment::new(label_text));
@@ -29,28 +33,24 @@ impl Label {
         // Set the text size
         text.set_font(Font::default(), font_scale);
 
-        Label { text, dest }
+        Label {
+            text,
+            dest,
+            phantom: PhantomData,
+        }
     }
 }
 
-impl UiElement for Label {
-    fn draw(&self, ctx: &mut ggez::Context) -> GameResult {
+impl<T> UiElement<T> for Label<T> {
+    fn draw(&self, ctx: &mut Context) -> GameResult {
         draw(ctx, &self.text, DrawParam::default().dest(self.dest))
     }
 
-    fn contains_point(
-        &self,
-        _ctx: &mut ggez::Context,
-        _point: &ggez::nalgebra::Point2<f32>,
-    ) -> bool {
+    fn contains_point(&self, _ctx: &mut Context, _point: &Point2<f32>) -> bool {
         false
     }
 
-    fn on_click(
-        &self,
-        _ctx: &mut ggez::Context,
-        _button: ggez::event::MouseButton,
-    ) -> Option<crate::view::ViewEvent> {
-        None
+    fn on_click(&self, _ctx: &mut Context, _button: MouseButton) -> Option<T> {
+        None::<T>
     }
 }

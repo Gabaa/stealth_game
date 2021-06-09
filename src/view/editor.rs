@@ -2,11 +2,17 @@ use super::{View, ViewEvent};
 use crate::{
     editor::SelectionHandler,
     game::{polygon::Polygon, rendering::Renderer, Game},
+    gui::{button::Button, UiLayer},
     state::Input,
 };
-use ggez::{event::KeyCode, nalgebra::Point2, Context, GameResult};
+use ggez::{
+    event::KeyCode,
+    graphics::{self, Rect},
+    nalgebra::Point2,
+    Context, GameResult,
+};
 
-pub const GRID_SIZE: f32 = 50.0;
+pub const GRID_SIZE: f32 = 25.0;
 
 fn snap_to_grid(point: Point2<f32>) -> Point2<f32> {
     let x = (point.x / GRID_SIZE).round() * GRID_SIZE;
@@ -14,18 +20,35 @@ fn snap_to_grid(point: Point2<f32>) -> Point2<f32> {
     Point2::new(x, y)
 }
 
+enum EditorEvent {
+    ViewEvent(ViewEvent),
+    CreateObstacle,
+}
+
 pub struct EditorView {
     game: Game,
     renderer: Renderer,
+    ui: UiLayer<EditorEvent>,
     selection_handler: SelectionHandler,
     snap_to_grid: bool,
 }
 
 impl EditorView {
-    pub fn new() -> GameResult<Self> {
+    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+        let mut ui = UiLayer::new();
+
+        let screen_coords = graphics::screen_coordinates(ctx);
+        let bounds = Rect::new(screen_coords.x + screen_coords.w - 160.0, 10.0, 150.0, 30.0);
+        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
+            Box::new(|_| Some(EditorEvent::CreateObstacle));
+        let button = Button::new(ctx, bounds, Some("Create obstacle"), on_click)?;
+
+        ui.add(button);
+
         Ok(EditorView {
             game: Game::new(),
             renderer: Renderer::new(),
+            ui,
             selection_handler: SelectionHandler::new(),
             snap_to_grid: false,
         })
@@ -40,6 +63,19 @@ impl EditorView {
         ]);
         self.game.game_map.obstacles.push(obstacle);
     }
+
+    fn handle_editor_events(&mut self, events: Vec<EditorEvent>) -> Vec<ViewEvent> {
+        let mut view_events = Vec::new();
+
+        for event in events {
+            match event {
+                EditorEvent::CreateObstacle => self.create_obstacle(),
+                EditorEvent::ViewEvent(view_event) => view_events.push(view_event),
+            }
+        }
+
+        view_events
+    }
 }
 
 impl View for EditorView {
@@ -49,17 +85,21 @@ impl View for EditorView {
 
     fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         self.renderer
-            .render(ctx, &self.game, Some(&self.selection_handler))
+            .render(ctx, &self.game, Some(&self.selection_handler))?;
+
+        self.ui.draw(ctx)
     }
 
-    fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<ViewEvent> {
+    fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<ViewEvent> {
         let mut events = vec![];
 
         match input {
             Input::MouseDown { button, x, y } => {
                 let pos = Point2::new(x, y);
                 self.selection_handler
-                    .handle_mouse_down(&mut self.game, button, pos)
+                    .handle_mouse_down(&mut self.game, button, pos);
+
+                events.extend(self.ui.mouse_press(ctx, button, x, y));
             }
             Input::MouseMotion { x, y } => {
                 let mouse_pos = Point2::new(x, y);
@@ -77,7 +117,7 @@ impl View for EditorView {
                 .selection_handler
                 .handle_mouse_up(&mut self.game, button),
             Input::KeyDown { key_code } => match key_code {
-                KeyCode::Escape => events.push(ViewEvent::PopView),
+                KeyCode::Escape => events.push(EditorEvent::ViewEvent(ViewEvent::PopView)),
                 KeyCode::LControl => self.snap_to_grid = true,
                 KeyCode::O => self.create_obstacle(),
                 _ => {}
@@ -88,7 +128,7 @@ impl View for EditorView {
             _ => {}
         }
 
-        events
+        self.handle_editor_events(events)
     }
 }
 

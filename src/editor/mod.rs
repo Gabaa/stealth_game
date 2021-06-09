@@ -189,9 +189,8 @@ impl SelectionHandler {
     }
 
     pub fn handle_mouse_up(&mut self, _game: &mut Game, button: MouseButton) {
-        match button {
-            MouseButton::Left => self.end_drag(),
-            _ => {}
+        if button == MouseButton::Left {
+            self.end_drag()
         }
     }
 

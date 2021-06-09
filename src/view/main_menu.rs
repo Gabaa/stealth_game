@@ -10,7 +10,7 @@ use ggez::{
 };
 
 pub struct MainMenuView {
-    ui_layer: UiLayer,
+    ui_layer: UiLayer<ViewEvent>,
 }
 
 impl MainMenuView {
@@ -54,7 +54,7 @@ impl View for MainMenuView {
     }
 }
 
-fn title_label(ctx: &mut Context, screen_coords: Rect) -> GameResult<Label> {
+fn title_label(ctx: &mut Context, screen_coords: Rect) -> GameResult<Label<ViewEvent>> {
     let bounds = Rect {
         x: screen_coords.x + 30.0,
         y: screen_coords.y + screen_coords.h / 4.0,
@@ -65,7 +65,7 @@ fn title_label(ctx: &mut Context, screen_coords: Rect) -> GameResult<Label> {
     Ok(label)
 }
 
-fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
+fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button<ViewEvent>> {
     let bounds = Rect {
         x: screen_coords.x + screen_coords.w / 4.0,
         y: screen_coords.y + screen_coords.h / 2.0,
@@ -84,7 +84,7 @@ fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
     )
 }
 
-fn editor_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
+fn editor_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button<ViewEvent>> {
     let bounds = Rect {
         x: screen_coords.x + screen_coords.w / 4.0,
         y: screen_coords.y + screen_coords.h / 2.0 + 70.0,
@@ -96,14 +96,14 @@ fn editor_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
         ctx,
         bounds,
         Some("Level editor"),
-        Box::new(|_ctx| {
-            let view = EditorView::new().ok()?;
+        Box::new(|ctx| {
+            let view = EditorView::new(ctx).ok()?;
             Some(ViewEvent::PushView(Box::new(view)))
         }),
     )
 }
 
-fn quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button> {
+fn quit_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button<ViewEvent>> {
     let bounds = Rect {
         x: screen_coords.x + screen_coords.w / 4.0,
         y: screen_coords.y + (screen_coords.h / 2.0) + 140.0,

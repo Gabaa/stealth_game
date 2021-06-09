@@ -1,22 +1,21 @@
-use crate::view::ViewEvent;
 use ggez::{event::MouseButton, nalgebra::Point2, Context, GameResult};
 
-pub trait UiElement {
+pub trait UiElement<T> {
     fn draw(&self, ctx: &mut Context) -> GameResult;
     fn contains_point(&self, ctx: &mut Context, point: &Point2<f32>) -> bool;
-    fn on_click(&self, ctx: &mut Context, button: MouseButton) -> Option<ViewEvent>;
+    fn on_click(&self, ctx: &mut Context, button: MouseButton) -> Option<T>;
 }
 
-pub struct UiLayer {
-    elements: Vec<Box<dyn UiElement>>,
+pub struct UiLayer<T> {
+    elements: Vec<Box<dyn UiElement<T>>>,
 }
 
-impl UiLayer {
+impl<T> UiLayer<T> {
     pub fn new() -> Self {
         UiLayer { elements: vec![] }
     }
 
-    pub fn add<T: 'static + UiElement>(&mut self, element: T) {
+    pub fn add<E: 'static + UiElement<T>>(&mut self, element: E) {
         self.elements.push(Box::new(element));
     }
 
@@ -34,7 +33,7 @@ impl UiLayer {
         button: MouseButton,
         x: f32,
         y: f32,
-    ) -> Vec<ViewEvent> {
+    ) -> Vec<T> {
         let point = Point2::new(x, y);
 
         let mut events = Vec::new();
