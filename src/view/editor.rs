@@ -1,6 +1,6 @@
 use super::{View, ViewEvent};
 use crate::{
-    editor::SelectionHandler,
+    editor::{PolygonType, SelectionHandler, SelectionObject},
     game::{polygon::Polygon, rendering::Renderer, Game},
     gui::{button::Button, UiLayer},
     state::Input,
@@ -64,6 +64,25 @@ impl EditorView {
         self.game.game_map.obstacles.push(obstacle);
     }
 
+    fn delete_selected_object(&mut self) {
+        match &self.selection_handler.selected_object {
+            Some(obj) => match obj {
+                SelectionObject::Actor { index } if *index != 0 => {
+                    self.game.actors.remove(*index);
+                    self.selection_handler.selected_object = None;
+                }
+                SelectionObject::Polygon {
+                    polygon_type: PolygonType::Obstacle { index },
+                } => {
+                    self.game.game_map.obstacles.remove(*index);
+                    self.selection_handler.selected_object = None;
+                }
+                _ => (),
+            },
+            None => (),
+        }
+    }
+
     fn handle_editor_events(&mut self, events: Vec<EditorEvent>) -> Vec<ViewEvent> {
         let mut view_events = Vec::new();
 
@@ -120,6 +139,7 @@ impl View for EditorView {
                 KeyCode::Escape => events.push(EditorEvent::ViewEvent(ViewEvent::PopView)),
                 KeyCode::LControl => self.snap_to_grid = true,
                 KeyCode::O => self.create_obstacle(),
+                KeyCode::Delete => self.delete_selected_object(),
                 _ => {}
             },
             Input::KeyUp {
