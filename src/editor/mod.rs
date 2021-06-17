@@ -77,6 +77,13 @@ impl SelectionHandler {
                     polygon_type,
                     index: i,
                 });
+            } else if let Some(i) = self.find_polygon_pseudo_vertex_at(polygon, mouse_pos) {
+                // Add and drag
+                polygon.verts.insert(i + 1, mouse_pos);
+                return Some(DragObject::PolygonVertex {
+                    polygon_type,
+                    index: i + 1,
+                });
             }
         }
 
@@ -118,6 +125,22 @@ impl SelectionHandler {
             .verts
             .iter()
             .position(|v| distance(v, &mouse_pos) <= 10.0)
+    }
+
+    /// Return the index of the polygon vertex under the mouse if one exists, otherwise None
+    fn find_polygon_pseudo_vertex_at(
+        &self,
+        polygon: &Polygon,
+        mouse_pos: Point2<f32>,
+    ) -> Option<usize> {
+        polygon
+            .edges()
+            .map(|(start, end)| {
+                let avg_x = (start.x + end.x) / 2.0;
+                let avg_y = (start.y + end.y) / 2.0;
+                Point2::new(avg_x, avg_y)
+            })
+            .position(|v| distance(&v, &mouse_pos) <= 10.0)
     }
 
     /// Return the index of the actor under the mouse
