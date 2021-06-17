@@ -64,7 +64,7 @@ fn move_out_of_obstacle(obstacle: &Polygon, player: &Actor, next_pos: &mut Point
 fn get_closest_point_on_polygon(polygon: &Polygon, point: Point2<f32>) -> Option<Point2<f32>> {
     let mut max_closest = None;
     let mut max_closest_dist = std::f32::MAX;
-    for (start, end) in polygon.edge_iter() {
+    for (start, end) in polygon.edges() {
         let closest = &get_closest_point(start, end, point);
         let dist = distance(closest, &point);
         if dist < max_closest_dist {
@@ -89,7 +89,7 @@ fn get_closest_point(a: Point2<f32>, b: Point2<f32>, p: Point2<f32>) -> Point2<f
 fn did_player_win(game_map: &GameMap, player: &Actor, next_pos: Point2<f32>) -> bool {
     let end_area = &game_map.end_area;
 
-    for (a, b) in end_area.edge_iter() {
+    for (a, b) in end_area.edges() {
         let closest_point = get_closest_point(a, b, next_pos);
 
         let dist = distance(&closest_point, &next_pos);

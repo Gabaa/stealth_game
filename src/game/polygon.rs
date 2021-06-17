@@ -12,7 +12,7 @@ impl Polygon {
         Polygon { verts }
     }
 
-    pub fn edge_iter(&self) -> EdgeIterator {
+    pub fn edges(&self) -> EdgeIterator {
         let newvec = self.verts.clone();
         EdgeIterator::new(newvec)
     }

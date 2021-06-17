@@ -3,7 +3,7 @@ use crate::{
     view::editor::GRID_SIZE,
 };
 
-use super::{actor::Actor, fov::FieldOfView, game_map::GameMap, Game};
+use super::{actor::Actor, fov::FieldOfView, game_map::GameMap, polygon::Polygon, Game};
 use ggez::{
     graphics::{self, draw, Color, DrawParam, Mesh, Rect},
     nalgebra::Point2,
@@ -107,12 +107,7 @@ impl Renderer {
             return Ok(());
         }
 
-        let mesh = graphics::Mesh::new_polygon(
-            ctx,
-            graphics::DrawMode::fill(),
-            &visible_area.verts,
-            color,
-        )?;
+        let mesh = Mesh::new_polygon(ctx, graphics::DrawMode::fill(), &visible_area.verts, color)?;
 
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())
     }
@@ -140,17 +135,12 @@ impl Renderer {
                 OBSTACLE
             };
 
-            let mesh = graphics::Mesh::new_polygon(
-                ctx,
-                graphics::DrawMode::fill(),
-                &polygon.verts,
-                color,
-            )?;
+            let mesh = Mesh::new_polygon(ctx, graphics::DrawMode::fill(), &polygon.verts, color)?;
 
             graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
 
             if is_selected {
-                self.draw_polygon_vertices(ctx, &polygon.verts)?;
+                self.draw_polygon_vertices(ctx, &polygon)?;
             }
         }
 
@@ -179,7 +169,7 @@ impl Renderer {
             END_AREA
         };
 
-        let mesh = graphics::Mesh::new_polygon(
+        let mesh = Mesh::new_polygon(
             ctx,
             graphics::DrawMode::fill(),
             &game_map.end_area.verts,
@@ -190,27 +180,43 @@ impl Renderer {
 
         // Draw vertices if selected
         if is_selected {
-            self.draw_polygon_vertices(ctx, &game_map.end_area.verts)?;
+            self.draw_polygon_vertices(ctx, &game_map.end_area)?;
         }
 
         Ok(())
     }
 
-    fn draw_polygon_vertices(&self, ctx: &mut Context, vertices: &[Point2<f32>]) -> GameResult {
-        for vertex in vertices {
-            let mesh = graphics::Mesh::new_circle(
-                ctx,
-                graphics::DrawMode::fill(),
-                *vertex,
-                5.0,
-                0.01,
-                graphics::WHITE,
-            )?;
+    fn draw_polygon_vertices(&self, ctx: &mut Context, polygon: &Polygon) -> GameResult {
+        for vertex in &polygon.verts {
+            self.draw_polygon_vertex(ctx, vertex, false)?;
+        }
 
-            graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+        // Draw pseudovertices on all edges
+        for (start_point, end_point) in polygon.edges() {
+            let avg_x = (start_point.x + end_point.x) / 2.0;
+            let avg_y = (start_point.y + end_point.y) / 2.0;
+            let middle_point = Point2::new(avg_x, avg_y);
+            self.draw_polygon_vertex(ctx, &middle_point, true)?;
         }
 
         Ok(())
+    }
+
+    fn draw_polygon_vertex(
+        &self,
+        ctx: &mut Context,
+        vertex: &Point2<f32>,
+        pseudovertex: bool,
+    ) -> GameResult {
+        let color = if pseudovertex {
+            Color::new(1.0, 1.0, 1.0, 0.2)
+        } else {
+            graphics::WHITE
+        };
+
+        let mesh = Mesh::new_circle(ctx, graphics::DrawMode::fill(), *vertex, 5.0, 0.01, color)?;
+
+        graphics::draw(ctx, &mesh, graphics::DrawParam::default())
     }
 
     fn draw_actors(&self, ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
@@ -226,7 +232,7 @@ impl Renderer {
             self.draw_discovery_bar(ctx, actor.discovered_player, &actor.pos, actor.radius)?;
         }
 
-        let mesh = graphics::Mesh::new_circle(
+        let mesh = Mesh::new_circle(
             ctx,
             graphics::DrawMode::fill(),
             [actor.pos.x, actor.pos.y],
@@ -250,7 +256,7 @@ impl Renderer {
         let width = radius * 2.0 * discovered_player;
         let left = pos.x - (width / 2.0);
 
-        let mesh = graphics::Mesh::new_rectangle(
+        let mesh = Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
             Rect::new(left, top, width, height),

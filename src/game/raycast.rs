@@ -32,7 +32,7 @@ pub fn raycast(ray: &Ray, polygons: &[Polygon], max_distance: f32) -> Option<Poi
     let mut closest_point = None;
 
     for polygon in polygons {
-        for (v1, v2) in polygon.edge_iter() {
+        for (v1, v2) in polygon.edges() {
             if let Some(point) = line_intersection(ray, v1, v2) {
                 let new_dist = distance(&point, &ray.position);
                 if new_dist < closest_point_dist {
