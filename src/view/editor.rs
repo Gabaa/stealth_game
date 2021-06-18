@@ -1,7 +1,7 @@
 use super::{View, ViewEvent};
 use crate::{
     editor::{PolygonType, SelectionHandler, SelectionObject},
-    game::{polygon::Polygon, rendering::Renderer, Game},
+    game::{actor::Actor, polygon::Polygon, rendering::Renderer, Game},
     gui::{button::Button, UiLayer},
     state::Input,
 };
@@ -23,6 +23,7 @@ fn snap_to_grid(point: Point2<f32>) -> Point2<f32> {
 enum EditorEvent {
     ViewEvent(ViewEvent),
     CreateObstacle,
+    CreateGuard,
 }
 
 pub struct EditorView {
@@ -38,12 +39,8 @@ impl EditorView {
         let mut ui = UiLayer::new();
 
         let screen_coords = graphics::screen_coordinates(ctx);
-        let bounds = Rect::new(screen_coords.x + screen_coords.w - 160.0, 10.0, 150.0, 30.0);
-        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
-            Box::new(|_| Some(EditorEvent::CreateObstacle));
-        let button = Button::new(ctx, bounds, Some("Create obstacle"), on_click)?;
-
-        ui.add(button);
+        ui.add(Self::init_obstacle_button(ctx, screen_coords)?);
+        ui.add(Self::init_guard_button(ctx, screen_coords)?);
 
         Ok(EditorView {
             game: Game::new(),
@@ -54,6 +51,26 @@ impl EditorView {
         })
     }
 
+    fn init_obstacle_button(
+        ctx: &mut Context,
+        screen_coords: Rect,
+    ) -> GameResult<Button<EditorEvent>> {
+        let bounds = Rect::new(screen_coords.x + screen_coords.w - 160.0, 10.0, 150.0, 30.0);
+        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
+            Box::new(|_| Some(EditorEvent::CreateObstacle));
+        Button::new(ctx, bounds, Some("Create obstacle"), on_click)
+    }
+
+    fn init_guard_button(
+        ctx: &mut Context,
+        screen_coords: Rect,
+    ) -> GameResult<Button<EditorEvent>> {
+        let bounds = Rect::new(screen_coords.x + screen_coords.w - 160.0, 50.0, 150.0, 30.0);
+        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
+            Box::new(|_| Some(EditorEvent::CreateGuard));
+        Button::new(ctx, bounds, Some("Create guard"), on_click)
+    }
+
     fn create_obstacle(&mut self) {
         let obstacle = Polygon::new(vec![
             Point2::new(100.0, 100.0),
@@ -62,6 +79,20 @@ impl EditorView {
             Point2::new(100.0, 200.0),
         ]);
         self.game.game_map.obstacles.push(obstacle);
+    }
+
+    fn create_guard(&mut self) {
+        let actor = Actor::new_guard(
+            100.0,
+            100.0,
+            vec![
+                Point2::new(50.0, 50.0),
+                Point2::new(150.0, 50.0),
+                Point2::new(150.0, 150.0),
+                Point2::new(50.0, 150.0),
+            ],
+        );
+        self.game.actors.push(actor);
     }
 
     fn delete_selected_object(&mut self) {
@@ -89,6 +120,7 @@ impl EditorView {
         for event in events {
             match event {
                 EditorEvent::CreateObstacle => self.create_obstacle(),
+                EditorEvent::CreateGuard => self.create_guard(),
                 EditorEvent::ViewEvent(view_event) => view_events.push(view_event),
             }
         }
