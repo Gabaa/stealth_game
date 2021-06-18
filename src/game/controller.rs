@@ -5,6 +5,8 @@ use ggez::{
     Context,
 };
 
+use super::polygon::Polygon;
+
 pub enum Controller {
     Player(PlayerController),
     Guard(GuardController),
@@ -16,7 +18,10 @@ impl Controller {
     }
 
     pub fn new_guard(points: Vec<Point2<f32>>, i: usize) -> Self {
-        Controller::Guard(GuardController { points, i })
+        Controller::Guard(GuardController {
+            points: Polygon::new(points),
+            i,
+        })
     }
 
     pub fn next_movement(
@@ -65,19 +70,19 @@ impl PlayerController {
 }
 
 pub struct GuardController {
-    pub points: Vec<Point2<f32>>,
+    pub points: Polygon,
     i: usize,
 }
 
 impl GuardController {
     fn next_movement(&mut self, _ctx: &Context, pos: Point2<f32>, move_speed: f32) -> Vector2<f32> {
-        if distance(&pos, &self.points[self.i]) <= 5.0 {
-            self.i = (self.i + 1) % self.points.len();
+        if distance(&pos, &self.points.verts[self.i]) <= 5.0 {
+            self.i = (self.i + 1) % self.points.verts.len();
         }
-        if distance(&pos, &self.points[self.i]) <= 2.0 {
-            self.points[self.i] - pos
+        if distance(&pos, &self.points.verts[self.i]) <= 2.0 {
+            self.points.verts[self.i] - pos
         } else {
-            let direction = Unit::new_normalize(self.points[self.i] - pos);
+            let direction = Unit::new_normalize(self.points.verts[self.i] - pos);
             direction.into_inner() * move_speed
         }
     }

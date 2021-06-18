@@ -1,4 +1,6 @@
-use crate::game::{game_map::GameMap, polygon::Polygon, Game};
+use crate::game::{
+    actor::Actor, controller::Controller, game_map::GameMap, polygon::Polygon, Game,
+};
 use ggez::{
     event::MouseButton,
     nalgebra::{distance, Point2},
@@ -26,6 +28,10 @@ impl PolygonType {
 pub enum DragObject {
     Actor {
         index: usize,
+    },
+    GuardPathVertex {
+        actor_index: usize,
+        vertex_index: usize,
     },
     Polygon {
         polygon_type: PolygonType,
@@ -85,6 +91,27 @@ impl SelectionHandler {
                     index: i + 1,
                 });
             }
+        } else if let Some(SelectionObject::Actor { index }) = self.selected_object {
+            let actor = game.actors.get_mut(index);
+            if let Some(Actor {
+                controller: Controller::Guard(guard),
+                ..
+            }) = actor
+            {
+                if let Some(i) = self.find_polygon_vertex_at(&guard.points, mouse_pos) {
+                    return Some(DragObject::GuardPathVertex {
+                        actor_index: index,
+                        vertex_index: i,
+                    });
+                } else if let Some(i) = self.find_polygon_pseudo_vertex_at(&guard.points, mouse_pos)
+                {
+                    guard.points.verts.insert(i + 1, mouse_pos);
+                    return Some(DragObject::GuardPathVertex {
+                        actor_index: index,
+                        vertex_index: i + 1,
+                    });
+                }
+            }
         }
 
         if let Some(i) = self.find_actor_at(game, mouse_pos) {
@@ -114,6 +141,18 @@ impl SelectionHandler {
                 if let Some(i) = self.find_polygon_vertex_at(polygon, mouse_pos) {
                     polygon.verts.remove(i);
                     return;
+                }
+            }
+        }
+        if let Some(SelectionObject::Actor { index }) = self.selected_object {
+            if let Some(actor) = game.actors.get_mut(index) {
+                if let Controller::Guard(guard) = &mut actor.controller {
+                    if guard.points.verts.len() > 3 {
+                        if let Some(i) = self.find_polygon_vertex_at(&guard.points, mouse_pos) {
+                            guard.points.verts.remove(i);
+                            return;
+                        }
+                    }
                 }
             }
         }
@@ -178,6 +217,18 @@ impl SelectionHandler {
                             .expect("could not find selected element");
                         selected.pos = mouse_pos;
                     }
+                    &DragObject::GuardPathVertex {
+                        actor_index,
+                        vertex_index,
+                    } => {
+                        if let Some(actor) = game.actors.get_mut(actor_index) {
+                            if let Controller::Guard(guard) = &mut actor.controller {
+                                if let Some(vertex) = guard.points.verts.get_mut(vertex_index) {
+                                    *vertex = mouse_pos
+                                }
+                            }
+                        }
+                    }
                     DragObject::Polygon { polygon_type } => {
                         let polygon = polygon_type.find(&mut game.game_map);
 
@@ -220,13 +271,16 @@ impl SelectionHandler {
     fn end_drag(&mut self) {
         self.selected_object = match self.dragged_object {
             Some(DragObject::Actor { index }) => Some(SelectionObject::Actor { index }),
+            Some(DragObject::GuardPathVertex { actor_index, .. }) => {
+                Some(SelectionObject::Actor { index: actor_index })
+            }
             Some(DragObject::Polygon { polygon_type }) => {
                 Some(SelectionObject::Polygon { polygon_type })
             }
             Some(DragObject::PolygonVertex { polygon_type, .. }) => {
                 Some(SelectionObject::Polygon { polygon_type })
             }
-            _ => None,
+            None => None,
         };
 
         self.dragged_object = None;

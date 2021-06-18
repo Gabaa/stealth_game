@@ -1,11 +1,13 @@
+use super::{
+    actor::Actor, controller::Controller, fov::FieldOfView, game_map::GameMap, polygon::Polygon,
+    Game,
+};
 use crate::{
     editor::{PolygonType, SelectionHandler, SelectionObject},
     view::editor::GRID_SIZE,
 };
-
-use super::{actor::Actor, fov::FieldOfView, game_map::GameMap, polygon::Polygon, Game};
 use ggez::{
-    graphics::{self, draw, Color, DrawParam, Mesh, Rect},
+    graphics::{self, draw, Color, DrawMode, DrawParam, Mesh, Rect},
     nalgebra::Point2,
     Context, GameResult,
 };
@@ -15,6 +17,8 @@ pub const END_AREA: Color = Color::new(0.0, 1.0, 0.0, 0.1);
 pub const END_AREA_SELECTED: Color = Color::new(0.5, 1.0, 0.5, 0.1);
 pub const PLAYER_VISIBLE_AREA: Color = Color::new(1.0, 1.0, 1.0, 0.1);
 pub const GUARD_VISIBLE_AREA: Color = Color::new(1.0, 0.0, 0.0, 0.1);
+pub const GUARD: Color = Color::new(0.0, 0.0, 1.0, 1.0);
+pub const GUARD_SELECTED: Color = Color::new(0.2, 0.2, 1.0, 1.0);
 pub const OBSTACLE: Color = Color::new(0.4, 0.4, 0.4, 1.0);
 pub const OBSTACLE_SELECTED: Color = Color::new(0.5, 0.5, 0.5, 1.0);
 
@@ -39,7 +43,7 @@ impl Renderer {
         self.draw_all_fov(ctx, &game.actors)?;
         self.draw_obstacles(ctx, &game.game_map, selection_handler)?;
         self.draw_end_area(ctx, &game.game_map, selection_handler)?;
-        self.draw_actors(ctx, &game.actors)?;
+        self.draw_actors(ctx, &game.actors, selection_handler)?;
 
         Ok(())
     }
@@ -219,17 +223,44 @@ impl Renderer {
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())
     }
 
-    fn draw_actors(&self, ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
-        for actor in actors {
-            self.draw_actor(ctx, actor)?;
+    fn draw_actors(
+        &self,
+        ctx: &mut Context,
+        actors: &[Actor],
+        selection_handler: Option<&SelectionHandler>,
+    ) -> GameResult<()> {
+        for (index, actor) in actors.iter().enumerate() {
+            self.draw_actor(ctx, index, actor, selection_handler)?;
         }
 
         Ok(())
     }
 
-    fn draw_actor(&self, ctx: &mut Context, actor: &Actor) -> GameResult<()> {
-        if !actor.is_player() {
+    fn draw_actor(
+        &self,
+        ctx: &mut Context,
+        index: usize,
+        actor: &Actor,
+        selection_handler: Option<&SelectionHandler>,
+    ) -> GameResult<()> {
+        let is_selected = matches!(
+            selection_handler,
+            Some(&SelectionHandler {
+                selected_object: Some(SelectionObject::Actor { index: i }),
+                ..
+            }) if i == index
+        );
+        let mut color = graphics::WHITE;
+
+        if let Controller::Guard(guard) = &actor.controller {
             self.draw_discovery_bar(ctx, actor.discovered_player, &actor.pos, actor.radius)?;
+            color = GUARD;
+
+            if is_selected {
+                self.draw_guard_patrol_path(ctx, &guard.points.verts)?;
+                self.draw_polygon_vertices(ctx, &guard.points)?;
+                color = GUARD_SELECTED;
+            }
         }
 
         let mesh = Mesh::new_circle(
@@ -238,7 +269,7 @@ impl Renderer {
             [actor.pos.x, actor.pos.y],
             actor.radius,
             0.5,
-            graphics::WHITE,
+            color,
         )?;
 
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())
@@ -264,5 +295,10 @@ impl Renderer {
         )?;
 
         graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+    }
+
+    fn draw_guard_patrol_path(&self, ctx: &mut Context, points: &[Point2<f32>]) -> GameResult {
+        let mesh = Mesh::new_polygon(ctx, DrawMode::stroke(2.0), points, graphics::WHITE)?;
+        draw(ctx, &mesh, DrawParam::default())
     }
 }

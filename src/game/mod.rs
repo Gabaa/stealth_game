@@ -94,7 +94,7 @@ impl Game {
             .for_each(|guard| {
                 let pos = (guard.pos.x, guard.pos.y);
                 let patrol = match &guard.controller {
-                    Controller::Guard(con) => con.points.iter().map(|p| (p.x, p.y)).collect(),
+                    Controller::Guard(con) => con.points.verts.iter().map(|p| (p.x, p.y)).collect(),
                     _ => unreachable!(),
                 };
                 guard_data.push((pos, patrol))
