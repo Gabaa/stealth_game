@@ -1,4 +1,8 @@
-use super::{editor::EditorView, game::GameView, View, ViewEvent};
+use super::{
+    editor::EditorView,
+    game::{load_level_info, GameView},
+    View, ViewEvent,
+};
 use crate::{
     gui::{button::Button, label::Label, UiLayer},
     state::Input,
@@ -78,7 +82,8 @@ fn start_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button<Vie
         bounds,
         Some("Play"),
         Box::new(|_| {
-            let view = Box::new(GameView::new("level1"));
+            let level_info = load_level_info("level_1");
+            let view = Box::new(GameView::new(level_info));
             Some(ViewEvent::PushView(view))
         }),
     )

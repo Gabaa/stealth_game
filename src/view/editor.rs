@@ -1,4 +1,9 @@
-use super::{View, ViewEvent};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
+
+use super::{game::GameView, View, ViewEvent};
 use crate::{
     editor::{PolygonType, SelectionHandler, SelectionObject},
     game::{actor::Actor, polygon::Polygon, rendering::Renderer, Game},
@@ -24,6 +29,8 @@ enum EditorEvent {
     ViewEvent(ViewEvent),
     CreateObstacle,
     CreateGuard,
+    Preview,
+    Save,
 }
 
 pub struct EditorView {
@@ -41,6 +48,8 @@ impl EditorView {
         let screen_coords = graphics::screen_coordinates(ctx);
         ui.add(Self::init_obstacle_button(ctx, screen_coords)?);
         ui.add(Self::init_guard_button(ctx, screen_coords)?);
+        ui.add(Self::init_preview_button(ctx, screen_coords)?);
+        ui.add(Self::init_save_button(ctx, screen_coords)?);
 
         Ok(EditorView {
             game: Game::new(),
@@ -55,7 +64,12 @@ impl EditorView {
         ctx: &mut Context,
         screen_coords: Rect,
     ) -> GameResult<Button<EditorEvent>> {
-        let bounds = Rect::new(screen_coords.x + screen_coords.w - 160.0, 10.0, 150.0, 30.0);
+        let bounds = Rect::new(
+            screen_coords.x + screen_coords.w - 160.0,
+            screen_coords.y + 10.0,
+            150.0,
+            30.0,
+        );
         let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
             Box::new(|_| Some(EditorEvent::CreateObstacle));
         Button::new(ctx, bounds, Some("Create obstacle"), on_click)
@@ -65,10 +79,42 @@ impl EditorView {
         ctx: &mut Context,
         screen_coords: Rect,
     ) -> GameResult<Button<EditorEvent>> {
-        let bounds = Rect::new(screen_coords.x + screen_coords.w - 160.0, 50.0, 150.0, 30.0);
+        let bounds = Rect::new(
+            screen_coords.x + screen_coords.w - 160.0,
+            screen_coords.y + 50.0,
+            150.0,
+            30.0,
+        );
         let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
             Box::new(|_| Some(EditorEvent::CreateGuard));
         Button::new(ctx, bounds, Some("Create guard"), on_click)
+    }
+
+    fn init_preview_button(
+        ctx: &mut Context,
+        screen_coords: Rect,
+    ) -> GameResult<Button<EditorEvent>> {
+        let bounds = Rect::new(
+            screen_coords.x + screen_coords.w - 160.0,
+            screen_coords.y + screen_coords.h - 40.0,
+            150.0,
+            30.0,
+        );
+        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
+            Box::new(|_| Some(EditorEvent::Preview));
+        Button::new(ctx, bounds, Some("Preview"), on_click)
+    }
+
+    fn init_save_button(ctx: &mut Context, screen_coords: Rect) -> GameResult<Button<EditorEvent>> {
+        let bounds = Rect::new(
+            screen_coords.x + screen_coords.w - 160.0,
+            screen_coords.y + screen_coords.h - 80.0,
+            150.0,
+            30.0,
+        );
+        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
+            Box::new(|_| Some(EditorEvent::Save));
+        Button::new(ctx, bounds, Some("Save"), on_click)
     }
 
     fn create_obstacle(&mut self) {
@@ -122,6 +168,35 @@ impl EditorView {
                 EditorEvent::CreateObstacle => self.create_obstacle(),
                 EditorEvent::CreateGuard => self.create_guard(),
                 EditorEvent::ViewEvent(view_event) => view_events.push(view_event),
+                EditorEvent::Preview => {
+                    let level_info = self.game.to_level_info();
+                    let view = Box::new(GameView::new(level_info));
+                    let view_event = ViewEvent::PushView(view);
+                    view_events.push(view_event)
+                }
+                EditorEvent::Save => {
+                    // Make the LevelInfo
+                    let level_info = self.game.to_level_info();
+
+                    // Find a file name of the form level_x.json
+                    let mut i = 1;
+                    let mut path: PathBuf;
+                    loop {
+                        path = Path::new("levels").join(format!("level_{}", i));
+                        path.set_extension("json");
+                        if !path.exists() {
+                            break;
+                        }
+                        i += 1
+                    }
+
+                    // Create the file and write the data
+                    let file = File::create(path).expect("Error while creating level file");
+                    serde_json::to_writer(file, &level_info).expect("Error while saving level");
+
+                    // Exit the editor
+                    view_events.push(ViewEvent::PopView);
+                }
             }
         }
 

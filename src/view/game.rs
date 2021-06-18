@@ -12,9 +12,7 @@ pub struct GameView {
 }
 
 impl GameView {
-    pub fn new(level_name: &str) -> Self {
-        let level_info = load_level_info(level_name);
-
+    pub fn new(level_info: LevelInfo) -> Self {
         GameView {
             game: Game::from_level_info(level_info),
             renderer: Renderer::new(),
@@ -45,7 +43,7 @@ impl View for GameView {
     }
 }
 
-fn load_level_info(level_name: &str) -> LevelInfo {
+pub fn load_level_info(level_name: &str) -> LevelInfo {
     let mut path = Path::new("levels").join(level_name);
     path.set_extension("json");
 
