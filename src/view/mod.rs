@@ -1,5 +1,6 @@
 pub mod editor;
 pub mod game;
+pub mod levels;
 pub mod main_menu;
 
 use crate::state::Input;
