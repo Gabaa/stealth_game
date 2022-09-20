@@ -103,7 +103,7 @@ fn level_button(
     )
 }
 
-fn level_display_name(level_name: &String) -> String {
+fn level_display_name(level_name: &str) -> String {
     let display_name = level_name.replace('_', " ");
     let mut display_name_chars = display_name.chars();
     match display_name_chars.next() {

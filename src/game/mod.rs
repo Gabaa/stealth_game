@@ -17,7 +17,8 @@ use self::{
     actor::Actor, collision_handling::apply_physics_movement, game_map::GameMap,
     level_info::LevelInfo,
 };
-use ggez::{nalgebra::Point2, Context};
+use ggez::Context;
+use nalgebra::Point2;
 
 pub struct Game {
     pub actors: Vec<Actor>,

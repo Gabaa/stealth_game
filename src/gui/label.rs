@@ -3,10 +3,10 @@ use std::marker::PhantomData;
 use super::UiElement;
 use ggez::{
     event::MouseButton,
-    graphics::{draw, DrawParam, Font, Rect, Scale, Text, TextFragment},
-    nalgebra::Point2,
+    graphics::{draw, DrawParam, Font, PxScale, Rect, Text, TextFragment},
     Context, GameResult,
 };
+use nalgebra::Point2;
 
 pub struct Label<T> {
     text: Text,
@@ -20,14 +20,14 @@ impl<T> Label<T> {
         let mut text = Text::new(TextFragment::new(label_text));
 
         // Find out the maximal size of the text inside the bounds
-        let (width, height) = text.dimensions(ctx);
-        let width_ratio = bounds.w / width as f32;
-        let height_ratio = bounds.h / height as f32;
+        let text_dim = text.dimensions(ctx);
+        let width_ratio = bounds.w / text_dim.w as f32;
+        let height_ratio = bounds.h / text_dim.h as f32;
 
         let font_scale = if width_ratio < height_ratio {
-            Scale::uniform(height as f32 * width_ratio)
+            PxScale::from(text_dim.h as f32 * width_ratio)
         } else {
-            Scale::uniform(bounds.h)
+            PxScale::from(bounds.h)
         };
 
         // Set the text size

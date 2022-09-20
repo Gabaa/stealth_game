@@ -1,10 +1,10 @@
+use nalgebra::{distance, Point2, Unit, Vector2};
 use {
     crate::game::{
         game_map::GameMap,
         polygon::Polygon,
         raycast::{raycast, Ray},
     },
-    ggez::nalgebra::{distance, Point2, Unit, Vector2},
     std::{cmp::Ordering, f32},
 };
 

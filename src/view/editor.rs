@@ -4,6 +4,7 @@ use std::{
 };
 
 use super::{game::GameView, View, ViewEvent};
+use crate::gui::button::ButtonClickHandler;
 use crate::{
     editor::{PolygonType, SelectionHandler, SelectionObject},
     game::{actor::Actor, polygon::Polygon, rendering::Renderer, Game},
@@ -13,9 +14,9 @@ use crate::{
 use ggez::{
     event::KeyCode,
     graphics::{self, Rect},
-    nalgebra::Point2,
     Context, GameResult,
 };
+use nalgebra::Point2;
 
 pub const GRID_SIZE: f32 = 25.0;
 
@@ -70,7 +71,7 @@ impl EditorView {
             150.0,
             30.0,
         );
-        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
+        let on_click: Box<ButtonClickHandler<EditorEvent>> =
             Box::new(|_| Some(EditorEvent::CreateObstacle));
         Button::new(ctx, bounds, Some("Create obstacle"), on_click)
     }
@@ -85,7 +86,7 @@ impl EditorView {
             150.0,
             30.0,
         );
-        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
+        let on_click: Box<ButtonClickHandler<EditorEvent>> =
             Box::new(|_| Some(EditorEvent::CreateGuard));
         Button::new(ctx, bounds, Some("Create guard"), on_click)
     }
@@ -100,7 +101,7 @@ impl EditorView {
             150.0,
             30.0,
         );
-        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
+        let on_click: Box<ButtonClickHandler<EditorEvent>> =
             Box::new(|_| Some(EditorEvent::Preview));
         Button::new(ctx, bounds, Some("Preview"), on_click)
     }
@@ -112,8 +113,7 @@ impl EditorView {
             150.0,
             30.0,
         );
-        let on_click: Box<dyn Fn(&mut Context) -> Option<EditorEvent>> =
-            Box::new(|_| Some(EditorEvent::Save));
+        let on_click: Box<ButtonClickHandler<EditorEvent>> = Box::new(|_| Some(EditorEvent::Save));
         Button::new(ctx, bounds, Some("Save"), on_click)
     }
 
@@ -262,7 +262,7 @@ impl View for EditorView {
 #[cfg(test)]
 mod tests {
     use crate::view::editor::snap_to_grid;
-    use ggez::nalgebra::Point2;
+    use nalgebra::Point2;
 
     #[test]
     fn snap_down() {

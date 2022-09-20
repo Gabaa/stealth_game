@@ -1,9 +1,5 @@
-use ggez::{
-    event::KeyCode,
-    input::keyboard::is_key_pressed,
-    nalgebra::{distance, Point2, Unit, Vector2},
-    Context,
-};
+use ggez::{event::KeyCode, input::keyboard::is_key_pressed, Context};
+use nalgebra::{distance, Point2, Unit, Vector2};
 
 use super::polygon::Polygon;
 

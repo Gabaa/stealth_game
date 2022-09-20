@@ -1,10 +1,8 @@
 use crate::game::{
     actor::Actor, controller::Controller, game_map::GameMap, polygon::Polygon, Game,
 };
-use ggez::{
-    event::MouseButton,
-    nalgebra::{distance, Point2},
-};
+use ggez::event::MouseButton;
+use nalgebra::{distance, Point2};
 use std::cmp::Ordering::Equal;
 
 #[derive(Debug, Clone, Copy)]
@@ -150,7 +148,6 @@ impl SelectionHandler {
                     if guard.points.verts.len() > 3 {
                         if let Some(i) = self.find_polygon_vertex_at(&guard.points, mouse_pos) {
                             guard.points.verts.remove(i);
-                            return;
                         }
                     }
                 }
@@ -189,7 +186,7 @@ impl SelectionHandler {
             .enumerate()
             .map(|(i, actor)| (i, distance(&actor.pos, &mouse_pos) - actor.radius))
             .filter(|(_, dist)| *dist < 0.0)
-            .min_by(|(_, dist_1), (_, dist_2)| dist_1.partial_cmp(&dist_2).unwrap_or(Equal))
+            .min_by(|(_, dist_1), (_, dist_2)| dist_1.partial_cmp(dist_2).unwrap_or(Equal))
             .map(|(i, _)| i)
     }
 

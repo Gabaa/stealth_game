@@ -59,7 +59,7 @@ impl event::EventHandler for State {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, graphics::Color::BLACK);
 
         if let Some(view) = self.top_view() {
             view.draw(ctx)?;

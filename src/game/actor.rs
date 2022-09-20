@@ -1,10 +1,8 @@
 use super::fov::{ConeFieldOfView, NoFieldOfView};
+use nalgebra::{Point2, Unit, Vector2};
 use {
     crate::game::{controller::Controller, fov::FieldOfView, game_map::GameMap},
-    ggez::{
-        nalgebra::{Point2, Unit, Vector2},
-        Context,
-    },
+    ggez::Context,
 };
 
 pub struct Actor {

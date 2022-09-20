@@ -1,4 +1,5 @@
-use ggez::{event::MouseButton, nalgebra::Point2, Context, GameResult};
+use ggez::{event::MouseButton, Context, GameResult};
+use nalgebra::Point2;
 
 pub trait UiElement<T> {
     fn draw(&self, ctx: &mut Context) -> GameResult;

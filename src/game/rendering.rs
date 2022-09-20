@@ -8,9 +8,9 @@ use crate::{
 };
 use ggez::{
     graphics::{self, draw, Color, DrawMode, DrawParam, Mesh, Rect},
-    nalgebra::Point2,
     Context, GameResult,
 };
+use nalgebra::Point2;
 
 pub const GRID_LINE: Color = Color::new(0.3, 0.3, 0.3, 1.0);
 pub const END_AREA: Color = Color::new(0.0, 1.0, 0.0, 0.1);
@@ -144,7 +144,7 @@ impl Renderer {
             graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
 
             if is_selected {
-                self.draw_polygon_vertices(ctx, &polygon)?;
+                self.draw_polygon_vertices(ctx, polygon)?;
             }
         }
 
@@ -215,7 +215,7 @@ impl Renderer {
         let color = if pseudovertex {
             Color::new(1.0, 1.0, 1.0, 0.2)
         } else {
-            graphics::WHITE
+            graphics::Color::WHITE
         };
 
         let mesh = Mesh::new_circle(ctx, graphics::DrawMode::fill(), *vertex, 5.0, 0.01, color)?;
@@ -250,7 +250,7 @@ impl Renderer {
                 ..
             }) if i == index
         );
-        let mut color = graphics::WHITE;
+        let mut color = graphics::Color::WHITE;
 
         if let Controller::Guard(guard) = &actor.controller {
             self.draw_discovery_bar(ctx, actor.discovered_player, &actor.pos, actor.radius)?;
@@ -298,7 +298,7 @@ impl Renderer {
     }
 
     fn draw_guard_patrol_path(&self, ctx: &mut Context, points: &[Point2<f32>]) -> GameResult {
-        let mesh = Mesh::new_polygon(ctx, DrawMode::stroke(2.0), points, graphics::WHITE)?;
+        let mesh = Mesh::new_polygon(ctx, DrawMode::stroke(2.0), points, graphics::Color::WHITE)?;
         draw(ctx, &mesh, DrawParam::default())
     }
 }

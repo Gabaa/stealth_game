@@ -1,15 +1,17 @@
 use super::{label::Label, ui_layer::UiElement};
 use ggez::{
     event::MouseButton,
-    graphics::{draw, DrawMode, DrawParam, Drawable, Mesh, Rect, WHITE},
-    nalgebra::Point2,
+    graphics::{draw, Color, DrawMode, DrawParam, Drawable, Mesh, Rect},
     Context, GameResult,
 };
+use nalgebra::Point2;
+
+pub type ButtonClickHandler<T> = dyn Fn(&mut Context) -> Option<T>;
 
 pub struct Button<T> {
     mesh: Mesh,
     label: Option<Label<T>>,
-    handle_click: Box<dyn Fn(&mut Context) -> Option<T>>,
+    handle_click: Box<ButtonClickHandler<T>>,
 }
 
 impl<T> Button<T> {
@@ -17,9 +19,9 @@ impl<T> Button<T> {
         ctx: &mut Context,
         bounds: Rect,
         button_text: Option<&str>,
-        on_click: Box<dyn Fn(&mut Context) -> Option<T>>,
+        on_click: Box<ButtonClickHandler<T>>,
     ) -> GameResult<Self> {
-        let mesh = Mesh::new_rectangle(ctx, DrawMode::stroke(3.0), bounds, WHITE)?;
+        let mesh = Mesh::new_rectangle(ctx, DrawMode::stroke(3.0), bounds, Color::WHITE)?;
 
         let label = match button_text {
             Some(text) => {

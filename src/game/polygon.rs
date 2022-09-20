@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
-use ggez::{graphics::Rect, nalgebra::Point2};
+use ggez::graphics::Rect;
+use nalgebra::Point2;
 
 pub struct Polygon {
     pub verts: Vec<Point2<f32>>,

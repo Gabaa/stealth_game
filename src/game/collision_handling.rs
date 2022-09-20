@@ -1,11 +1,9 @@
+use nalgebra::{distance, Point2, Unit, Vector2};
 use {
     crate::game::{
         actor::Actor, controller::Controller, game_map::GameMap, polygon::Polygon, Game,
     },
-    ggez::{
-        nalgebra::{distance, Point2, Unit, Vector2},
-        Context,
-    },
+    ggez::Context,
 };
 
 pub fn apply_physics_movement(game: &mut Game, ctx: &Context) {
@@ -20,7 +18,7 @@ pub fn apply_physics_movement(game: &mut Game, ctx: &Context) {
         handle_obstacle_collisions(&game.game_map, actor, next_pos);
 
         if let Controller::Player(_) = actor.controller {
-            game.player_won = did_player_win(&game.game_map, &actor, *next_pos);
+            game.player_won = did_player_win(&game.game_map, actor, *next_pos);
         }
 
         actor.pos = *next_pos;
@@ -47,7 +45,7 @@ fn handle_obstacle_collisions(game_map: &GameMap, actor: &mut Actor, next_pos: &
 
 fn move_out_of_obstacle(obstacle: &Polygon, player: &Actor, next_pos: &mut Point2<f32>) -> bool {
     if let Some(closest_point) = get_closest_point_on_polygon(obstacle, *next_pos) {
-        let dist = distance(&closest_point, &next_pos);
+        let dist = distance(&closest_point, next_pos);
         if dist < player.radius {
             let direction = *next_pos - closest_point;
             let unit_direction = direction.normalize();
