@@ -72,7 +72,6 @@ fn get_all_level_names() -> Vec<String> {
     let levels_directory = Path::new("levels");
     fs::read_dir(levels_directory)
         .expect("Could not read levels")
-        .into_iter()
         .map(|level| {
             level
                 .expect("Failed to read level")

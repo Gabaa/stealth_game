@@ -21,11 +21,11 @@ impl<T> Label<T> {
 
         // Find out the maximal size of the text inside the bounds
         let text_dim = text.dimensions(ctx);
-        let width_ratio = bounds.w / text_dim.w as f32;
-        let height_ratio = bounds.h / text_dim.h as f32;
+        let width_ratio = bounds.w / text_dim.w;
+        let height_ratio = bounds.h / text_dim.h;
 
         let font_scale = if width_ratio < height_ratio {
-            PxScale::from(text_dim.h as f32 * width_ratio)
+            PxScale::from(text_dim.h * width_ratio)
         } else {
             PxScale::from(bounds.h)
         };
