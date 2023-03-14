@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod editor;
 mod game;
 mod gui;
