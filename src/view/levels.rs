@@ -7,38 +7,47 @@ use crate::{
     state::Input,
 };
 use ggez::{
-    event::KeyCode,
-    graphics::{self, Rect},
+    graphics::{Canvas, Rect},
+    input::keyboard::KeyCode,
     Context, GameResult,
 };
-use std::fs;
-use std::path::Path;
+use std::{fs, path::Path};
 
 pub struct LevelsView {
-    ui_layer: UiLayer<ViewEvent>,
+    level_names: Vec<String>,
+    ui_layer: Option<UiLayer<ViewEvent>>,
 }
 
 impl LevelsView {
-    pub fn new(ctx: &mut Context) -> GameResult<Self> {
-        let mut ui_layer = UiLayer::new();
-
-        let screen_coords = graphics::screen_coordinates(ctx);
+    pub fn new(_ctx: &mut Context) -> GameResult<Self> {
         let level_names = get_all_level_names();
+
+        Ok(LevelsView {
+            level_names,
+            ui_layer: None,
+        })
+    }
+
+    fn init_ui(&mut self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
+        let mut ui_layer = UiLayer::new();
 
         let mut y = 30.0;
 
-        for level_name in level_names {
+        let screen_coords = canvas.screen_coordinates().unwrap();
+        for level_name in &self.level_names {
             let bounds = Rect::new(
                 screen_coords.x + screen_coords.w / 4.0,
                 screen_coords.y + y,
                 screen_coords.w / 2.0,
                 60.0,
             );
-            ui_layer.add(level_button(ctx, bounds, level_name)?);
+            ui_layer.add(level_button(ctx, bounds, level_name.to_owned())?);
             y += 70.0;
         }
 
-        Ok(LevelsView { ui_layer })
+        self.ui_layer = Some(ui_layer);
+
+        Ok(())
     }
 }
 
@@ -47,24 +56,33 @@ impl View for LevelsView {
         Vec::new()
     }
 
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
-        self.ui_layer.draw(ctx)
+    fn draw(&mut self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
+        if self.ui_layer.is_none() {
+            self.init_ui(ctx, canvas)?;
+        }
+
+        self.ui_layer.as_ref().unwrap().draw(ctx, canvas)
     }
 
     fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<ViewEvent> {
-        let mut events = Vec::new();
+        match &mut self.ui_layer {
+            Some(ui_layer) => {
+                let mut events = Vec::new();
 
-        match input {
-            Input::MouseDown { button, x, y } => {
-                events.extend(self.ui_layer.mouse_press(ctx, button, x, y))
+                match input {
+                    Input::MouseDown { button, x, y } => {
+                        events.extend(ui_layer.mouse_press(ctx, button, x, y))
+                    }
+                    Input::KeyDown {
+                        key_code: KeyCode::Escape,
+                    } => events.push(ViewEvent::PopView),
+                    _ => {}
+                };
+
+                events
             }
-            Input::KeyDown {
-                key_code: KeyCode::Escape,
-            } => events.push(ViewEvent::PopView),
-            _ => {}
-        };
-
-        events
+            None => Vec::new(),
+        }
     }
 }
 

@@ -1,8 +1,8 @@
-use ggez::{event::MouseButton, Context, GameResult};
+use ggez::{event::MouseButton, graphics::Canvas, Context, GameResult};
 use nalgebra::Point2;
 
 pub trait UiElement<T> {
-    fn draw(&self, ctx: &mut Context) -> GameResult;
+    fn draw(&self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult;
     fn contains_point(&self, ctx: &mut Context, point: &Point2<f32>) -> bool;
     fn on_click(&self, ctx: &mut Context, button: MouseButton) -> Option<T>;
 }
@@ -20,9 +20,9 @@ impl<T> UiLayer<T> {
         self.elements.push(Box::new(element));
     }
 
-    pub fn draw(&self, ctx: &mut Context) -> GameResult {
+    pub fn draw(&self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
         for element in &self.elements {
-            element.draw(ctx)?;
+            element.draw(ctx, canvas)?;
         }
 
         Ok(())
