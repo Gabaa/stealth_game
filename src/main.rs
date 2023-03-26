@@ -6,6 +6,7 @@ fn main() {
         .add_state::<GameState>()
         .add_startup_system(setup)
         .add_plugin(menu::MenuPlugin)
+        .add_plugin(game::GamePlugin)
         .run();
 }
 
@@ -144,5 +145,52 @@ mod menu {
                     },
                 ));
             });
+    }
+}
+
+mod game {
+    use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+
+    use crate::GameState;
+
+    pub struct GamePlugin;
+
+    impl Plugin for GamePlugin {
+        fn build(&self, app: &mut App) {
+            app.add_system(setup_game.in_schedule(OnEnter(GameState::Game)));
+            app.add_system(destroy_game.in_schedule(OnExit(GameState::Game)));
+            app.add_system(move_system.in_set(OnUpdate(GameState::Game)));
+        }
+    }
+
+    #[derive(Component)]
+    pub struct Game;
+
+    fn setup_game(
+        mut commands: Commands,
+        mut meshes: ResMut<Assets<Mesh>>,
+        mut materials: ResMut<Assets<ColorMaterial>>,
+    ) {
+        commands.spawn((
+            Game,
+            MaterialMesh2dBundle {
+                mesh: meshes.add(shape::Circle::new(50.).into()).into(),
+                material: materials.add(ColorMaterial::from(Color::PURPLE)),
+                transform: Transform::from_translation(Vec3::new(-150., 0., 0.)),
+                ..default()
+            },
+        ));
+    }
+
+    fn destroy_game(entities: Query<Entity, With<Game>>, mut commands: Commands) {
+        for entity in &entities {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+
+    fn move_system(mut query: Query<&mut Transform, With<Game>>, time: Res<Time>) {
+        for mut transform in &mut query {
+            transform.translation.x += 150. * time.delta_seconds();
+        }
     }
 }
