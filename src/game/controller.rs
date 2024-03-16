@@ -1,4 +1,4 @@
-use ggez::{event::KeyCode, input::keyboard::is_key_pressed, Context};
+use ggez::{input::keyboard::KeyCode, Context};
 use nalgebra::{distance, Point2, Unit, Vector2};
 
 use super::polygon::Polygon;
@@ -39,16 +39,16 @@ impl PlayerController {
     fn next_movement(&mut self, ctx: &Context, move_speed: f32) -> Vector2<f32> {
         let mut dx = 0.0;
         let mut dy = 0.0;
-        if is_key_pressed(ctx, KeyCode::W) {
+        if ctx.keyboard.is_key_pressed(KeyCode::W) {
             dy -= 1.0;
         }
-        if is_key_pressed(ctx, KeyCode::S) {
+        if ctx.keyboard.is_key_pressed(KeyCode::S) {
             dy += 1.0;
         }
-        if is_key_pressed(ctx, KeyCode::A) {
+        if ctx.keyboard.is_key_pressed(KeyCode::A) {
             dx -= 1.0;
         }
-        if is_key_pressed(ctx, KeyCode::D) {
+        if ctx.keyboard.is_key_pressed(KeyCode::D) {
             dx += 1.0;
         }
         let direction = Vector2::new(dx, dy);
@@ -56,7 +56,7 @@ impl PlayerController {
             return direction;
         }
         let normalized_direction = direction.normalize();
-        let move_speed = if is_key_pressed(ctx, KeyCode::LShift) {
+        let move_speed = if ctx.keyboard.is_key_pressed(KeyCode::LShift) {
             2.0 * move_speed
         } else {
             move_speed

@@ -1,7 +1,13 @@
-use ggez::event::{KeyCode, KeyMods};
-
 use crate::view::{main_menu::MainMenuView, View, ViewEvent};
-use ggez::{event, graphics, input::mouse::MouseButton, timer, Context, GameResult};
+use ggez::{
+    event,
+    graphics::{Canvas, Color},
+    input::{
+        keyboard::{KeyCode, KeyInput},
+        mouse::MouseButton,
+    },
+    Context, GameResult,
+};
 
 pub struct State {
     view_stack: Vec<Box<dyn View>>,
@@ -15,16 +21,12 @@ impl State {
     }
 
     #[allow(clippy::borrowed_box)]
-    fn top_view(&self) -> Option<&Box<dyn View>> {
-        self.view_stack.last()
-    }
-
-    fn top_view_mut(&mut self) -> Option<&mut Box<dyn View>> {
+    fn top_view(&mut self) -> Option<&mut Box<dyn View>> {
         self.view_stack.last_mut()
     }
 
     fn receive_input(&mut self, ctx: &mut Context, input: Input) {
-        if let Some(view) = self.top_view_mut() {
+        if let Some(view) = self.top_view() {
             let events = view.receive_input(ctx, input);
             self.handle_events(ctx, events)
         }
@@ -40,7 +42,7 @@ impl State {
             }
 
             if self.view_stack.is_empty() {
-                event::quit(ctx);
+                ctx.request_quit()
             }
         }
     }
@@ -48,8 +50,8 @@ impl State {
 
 impl event::EventHandler for State {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        while timer::check_update_time(ctx, 60) {
-            if let Some(view) = self.top_view_mut() {
+        while ctx.time.check_update_time(60) {
+            if let Some(view) = self.top_view() {
                 let events = view.tick(ctx);
                 self.handle_events(ctx, events);
             }
@@ -58,40 +60,62 @@ impl event::EventHandler for State {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, graphics::Color::BLACK);
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
 
         if let Some(view) = self.top_view() {
-            view.draw(ctx)?;
+            view.draw(ctx, &mut canvas)?;
         }
 
-        graphics::present(ctx)
+        canvas.finish(ctx)
     }
 
-    fn key_down_event(
+    fn key_down_event(&mut self, ctx: &mut Context, input: KeyInput, _repeat: bool) -> GameResult {
+        if let Some(key_code) = input.keycode {
+            self.receive_input(ctx, Input::KeyDown { key_code })
+        };
+        Ok(())
+    }
+
+    fn key_up_event(&mut self, ctx: &mut Context, input: KeyInput) -> GameResult {
+        if let Some(key_code) = input.keycode {
+            self.receive_input(ctx, Input::KeyUp { key_code })
+        }
+        Ok(())
+    }
+
+    fn mouse_button_down_event(
         &mut self,
         ctx: &mut Context,
-        key_code: KeyCode,
-        _keymods: KeyMods,
-        _repeat: bool,
-    ) {
-        self.receive_input(ctx, Input::KeyDown { key_code })
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
+        self.receive_input(ctx, Input::MouseDown { button, x, y });
+        Ok(())
     }
 
-    fn key_up_event(&mut self, ctx: &mut Context, key_code: KeyCode, _keymods: KeyMods) {
-        self.receive_input(ctx, Input::KeyUp { key_code })
+    fn mouse_motion_event(
+        &mut self,
+        ctx: &mut Context,
+        x: f32,
+        y: f32,
+        _dx: f32,
+        _dy: f32,
+    ) -> GameResult {
+        self.receive_input(ctx, Input::MouseMotion { x, y });
+        Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
-        self.receive_input(ctx, Input::MouseDown { button, x, y })
-    }
-
-    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        self.receive_input(ctx, Input::MouseMotion { x, y })
-    }
-
-    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_up_event(
+        &mut self,
+        ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
         self.receive_input(ctx, Input::MouseUp { button, x, y });
+        Ok(())
     }
 }
 

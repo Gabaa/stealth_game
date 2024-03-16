@@ -1,22 +1,23 @@
+use super::{game::GameView, View, ViewEvent};
+use crate::{
+    editor::{PolygonType, SelectionHandler, SelectionObject},
+    game::{actor::Actor, polygon::Polygon, rendering::Renderer, Game},
+    gui::{
+        button::{Button, ButtonClickHandler},
+        UiLayer,
+    },
+    state::Input,
+};
+use ggez::{
+    graphics::{Canvas, Rect},
+    input::keyboard::KeyCode,
+    Context, GameResult,
+};
+use nalgebra::Point2;
 use std::{
     fs::File,
     path::{Path, PathBuf},
 };
-
-use super::{game::GameView, View, ViewEvent};
-use crate::gui::button::ButtonClickHandler;
-use crate::{
-    editor::{PolygonType, SelectionHandler, SelectionObject},
-    game::{actor::Actor, polygon::Polygon, rendering::Renderer, Game},
-    gui::{button::Button, UiLayer},
-    state::Input,
-};
-use ggez::{
-    event::KeyCode,
-    graphics::{self, Rect},
-    Context, GameResult,
-};
-use nalgebra::Point2;
 
 pub const GRID_SIZE: f32 = 25.0;
 
@@ -37,28 +38,34 @@ enum EditorEvent {
 pub struct EditorView {
     game: Game,
     renderer: Renderer,
-    ui: UiLayer<EditorEvent>,
+    ui: Option<UiLayer<EditorEvent>>,
     selection_handler: SelectionHandler,
     snap_to_grid: bool,
 }
 
 impl EditorView {
-    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+    pub fn new(_ctx: &mut Context) -> GameResult<Self> {
+        Ok(EditorView {
+            game: Game::new(),
+            renderer: Renderer::new(),
+            ui: None,
+            selection_handler: SelectionHandler::new(),
+            snap_to_grid: false,
+        })
+    }
+
+    fn init_ui(&mut self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
         let mut ui = UiLayer::new();
 
-        let screen_coords = graphics::screen_coordinates(ctx);
+        let screen_coords = canvas.screen_coordinates().unwrap();
         ui.add(Self::init_obstacle_button(ctx, screen_coords)?);
         ui.add(Self::init_guard_button(ctx, screen_coords)?);
         ui.add(Self::init_preview_button(ctx, screen_coords)?);
         ui.add(Self::init_save_button(ctx, screen_coords)?);
 
-        Ok(EditorView {
-            game: Game::new(),
-            renderer: Renderer::new(),
-            ui,
-            selection_handler: SelectionHandler::new(),
-            snap_to_grid: false,
-        })
+        self.ui = Some(ui);
+
+        Ok(())
     }
 
     fn init_obstacle_button(
@@ -209,51 +216,58 @@ impl View for EditorView {
         Vec::new()
     }
 
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult<()> {
         self.renderer
-            .render(ctx, &self.game, Some(&self.selection_handler))?;
+            .render(ctx, canvas, &self.game, Some(&self.selection_handler))?;
 
-        self.ui.draw(ctx)
+        if self.ui.is_none() {
+            self.init_ui(ctx, canvas)?;
+        }
+
+        self.ui.as_ref().unwrap().draw(ctx, canvas)
     }
 
     fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<ViewEvent> {
         let mut events = vec![];
 
-        match input {
-            Input::MouseDown { button, x, y } => {
-                let pos = Point2::new(x, y);
-                self.selection_handler
-                    .handle_mouse_down(&mut self.game, button, pos);
+        match &mut self.ui {
+            Some(ui) => match input {
+                Input::MouseDown { button, x, y } => {
+                    let pos = Point2::new(x, y);
+                    self.selection_handler
+                        .handle_mouse_down(&mut self.game, button, pos);
 
-                events.extend(self.ui.mouse_press(ctx, button, x, y));
-            }
-            Input::MouseMotion { x, y } => {
-                let mouse_pos = Point2::new(x, y);
+                    events.extend(ui.mouse_press(ctx, button, x, y));
+                }
+                Input::MouseMotion { x, y } => {
+                    let mouse_pos = Point2::new(x, y);
 
-                self.selection_handler.handle_mouse_motion(
-                    &mut self.game,
-                    if self.snap_to_grid {
-                        snap_to_grid(mouse_pos)
-                    } else {
-                        mouse_pos
-                    },
-                );
-            }
-            Input::MouseUp { button, .. } => self
-                .selection_handler
-                .handle_mouse_up(&mut self.game, button),
-            Input::KeyDown { key_code } => match key_code {
-                KeyCode::Escape => events.push(EditorEvent::ViewEvent(ViewEvent::PopView)),
-                KeyCode::LControl => self.snap_to_grid = true,
-                KeyCode::O => self.create_obstacle(),
-                KeyCode::Delete => self.delete_selected_object(),
+                    self.selection_handler.handle_mouse_motion(
+                        &mut self.game,
+                        if self.snap_to_grid {
+                            snap_to_grid(mouse_pos)
+                        } else {
+                            mouse_pos
+                        },
+                    );
+                }
+                Input::MouseUp { button, .. } => self
+                    .selection_handler
+                    .handle_mouse_up(&mut self.game, button),
+                Input::KeyDown { key_code } => match key_code {
+                    KeyCode::Escape => events.push(EditorEvent::ViewEvent(ViewEvent::PopView)),
+                    KeyCode::LControl => self.snap_to_grid = true,
+                    KeyCode::O => self.create_obstacle(),
+                    KeyCode::Delete => self.delete_selected_object(),
+                    _ => {}
+                },
+                Input::KeyUp {
+                    key_code: KeyCode::LControl,
+                } => self.snap_to_grid = false,
                 _ => {}
             },
-            Input::KeyUp {
-                key_code: KeyCode::LControl,
-            } => self.snap_to_grid = false,
-            _ => {}
-        }
+            None => {}
+        };
 
         self.handle_editor_events(events)
     }

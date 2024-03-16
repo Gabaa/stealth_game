@@ -3,7 +3,7 @@ use crate::{
     state::Input,
     view::{View, ViewEvent},
 };
-use ggez::{event::KeyCode, Context, GameResult};
+use ggez::{graphics::Canvas, input::keyboard::KeyCode, Context, GameResult};
 use std::{fs::File, path::Path};
 
 pub struct GameView {
@@ -25,8 +25,8 @@ impl View for GameView {
         self.game.tick(ctx)
     }
 
-    fn draw(&self, ctx: &mut Context) -> GameResult {
-        self.renderer.render(ctx, &self.game, None)
+    fn draw(&mut self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
+        self.renderer.render(ctx, canvas, &self.game, None)
     }
 
     fn receive_input(&mut self, _ctx: &mut Context, input: Input) -> Vec<ViewEvent> {

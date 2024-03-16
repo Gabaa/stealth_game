@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use super::UiElement;
 use ggez::{
     event::MouseButton,
-    graphics::{draw, DrawParam, Font, PxScale, Rect, Text, TextFragment},
+    graphics::{Canvas, DrawParam, Drawable, PxScale, Rect, Text, TextFragment},
     Context, GameResult,
 };
 use nalgebra::Point2;
@@ -20,7 +20,7 @@ impl<T> Label<T> {
         let mut text = Text::new(TextFragment::new(label_text));
 
         // Find out the maximal size of the text inside the bounds
-        let text_dim = text.dimensions(ctx);
+        let text_dim = text.dimensions(ctx).unwrap();
         let width_ratio = bounds.w / text_dim.w;
         let height_ratio = bounds.h / text_dim.h;
 
@@ -31,7 +31,7 @@ impl<T> Label<T> {
         };
 
         // Set the text size
-        text.set_font(Font::default(), font_scale);
+        text.set_scale(font_scale);
 
         Label {
             text,
@@ -42,8 +42,10 @@ impl<T> Label<T> {
 }
 
 impl<T> UiElement<T> for Label<T> {
-    fn draw(&self, ctx: &mut Context) -> GameResult {
-        draw(ctx, &self.text, DrawParam::default().dest(self.dest))
+    fn draw(&self, _ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
+        canvas.draw(&self.text, DrawParam::default().dest(self.dest));
+
+        Ok(())
     }
 
     fn contains_point(&self, _ctx: &mut Context, _point: &Point2<f32>) -> bool {

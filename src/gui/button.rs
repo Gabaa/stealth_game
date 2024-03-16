@@ -1,7 +1,7 @@
 use super::{label::Label, ui_layer::UiElement};
 use ggez::{
     event::MouseButton,
-    graphics::{draw, Color, DrawMode, DrawParam, Drawable, Mesh, Rect},
+    graphics::{Canvas, Color, DrawMode, DrawParam, Drawable, Mesh, Rect},
     Context, GameResult,
 };
 use nalgebra::Point2;
@@ -45,11 +45,11 @@ impl<T> Button<T> {
 }
 
 impl<T> UiElement<T> for Button<T> {
-    fn draw(&self, ctx: &mut Context) -> GameResult {
-        draw(ctx, &self.mesh, DrawParam::new())?;
+    fn draw(&self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
+        canvas.draw(&self.mesh, DrawParam::new().color(Color::WHITE));
 
         match &self.label {
-            Some(label) => label.draw(ctx),
+            Some(label) => label.draw(ctx, canvas),
             None => Ok(()),
         }
     }

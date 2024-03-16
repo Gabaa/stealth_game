@@ -7,7 +7,7 @@ use crate::{
     view::editor::GRID_SIZE,
 };
 use ggez::{
-    graphics::{self, draw, Color, DrawMode, DrawParam, Mesh, Rect},
+    graphics::{self, Canvas, Color, DrawMode, DrawParam, Mesh, Rect},
     Context, GameResult,
 };
 use nalgebra::Point2;
@@ -32,24 +32,25 @@ impl Renderer {
     pub fn render(
         &self,
         ctx: &mut Context,
+        canvas: &mut Canvas,
         game: &Game,
         selection_handler: Option<&SelectionHandler>,
     ) -> GameResult<()> {
         // TODO: These should re-use the meshes instead of remaking each time
 
         if selection_handler.is_some() {
-            self.draw_grid(ctx)?;
+            self.draw_grid(ctx, canvas)?;
         }
-        self.draw_all_fov(ctx, &game.actors)?;
-        self.draw_obstacles(ctx, &game.game_map, selection_handler)?;
-        self.draw_end_area(ctx, &game.game_map, selection_handler)?;
-        self.draw_actors(ctx, &game.actors, selection_handler)?;
+        self.draw_all_fov(ctx, canvas, &game.actors)?;
+        self.draw_obstacles(ctx, canvas, &game.game_map, selection_handler)?;
+        self.draw_end_area(ctx, canvas, &game.game_map, selection_handler)?;
+        self.draw_actors(ctx, canvas, &game.actors, selection_handler)?;
 
         Ok(())
     }
 
-    fn draw_grid(&self, ctx: &mut Context) -> GameResult {
-        let screen_coords = graphics::screen_coordinates(ctx);
+    fn draw_grid(&self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
+        let screen_coords = canvas.screen_coordinates().unwrap();
 
         let mut x = screen_coords.x;
         while x < screen_coords.x + screen_coords.w {
@@ -63,7 +64,7 @@ impl Renderer {
                 GRID_LINE,
             )?;
 
-            draw(ctx, &line, DrawParam::default())?;
+            canvas.draw(&line, DrawParam::default());
 
             x += GRID_SIZE;
         }
@@ -80,7 +81,7 @@ impl Renderer {
                 GRID_LINE,
             )?;
 
-            draw(ctx, &line, DrawParam::default())?;
+            canvas.draw(&line, DrawParam::default());
 
             y += GRID_SIZE;
         }
@@ -88,20 +89,31 @@ impl Renderer {
         Ok(())
     }
 
-    fn draw_all_fov(&self, ctx: &mut Context, actors: &[Actor]) -> GameResult<()> {
+    fn draw_all_fov(
+        &self,
+        ctx: &mut Context,
+        canvas: &mut Canvas,
+        actors: &[Actor],
+    ) -> GameResult<()> {
         for actor in actors {
             let color = if actor.is_player() {
                 PLAYER_VISIBLE_AREA
             } else {
                 GUARD_VISIBLE_AREA
             };
-            self.draw_fov(ctx, &*actor.fov, color)?;
+            self.draw_fov(ctx, canvas, &*actor.fov, color)?;
         }
 
         Ok(())
     }
 
-    fn draw_fov(&self, ctx: &mut Context, fov: &dyn FieldOfView, color: Color) -> GameResult<()> {
+    fn draw_fov(
+        &self,
+        ctx: &mut Context,
+        canvas: &mut Canvas,
+        fov: &dyn FieldOfView,
+        color: Color,
+    ) -> GameResult {
         let visible_area = match fov.get_visible_area() {
             Some(polygon) => polygon,
             None => return Ok(()),
@@ -113,12 +125,15 @@ impl Renderer {
 
         let mesh = Mesh::new_polygon(ctx, graphics::DrawMode::fill(), &visible_area.verts, color)?;
 
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+        canvas.draw(&mesh, graphics::DrawParam::default());
+
+        Ok(())
     }
 
     fn draw_obstacles(
         &self,
         ctx: &mut Context,
+        canvas: &mut Canvas,
         game_map: &GameMap,
         selection_handler: Option<&SelectionHandler>,
     ) -> GameResult<()> {
@@ -141,10 +156,10 @@ impl Renderer {
 
             let mesh = Mesh::new_polygon(ctx, graphics::DrawMode::fill(), &polygon.verts, color)?;
 
-            graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+            canvas.draw(&mesh, graphics::DrawParam::default());
 
             if is_selected {
-                self.draw_polygon_vertices(ctx, polygon)?;
+                self.draw_polygon_vertices(ctx, canvas, polygon)?;
             }
         }
 
@@ -154,6 +169,7 @@ impl Renderer {
     fn draw_end_area(
         &self,
         ctx: &mut Context,
+        canvas: &mut Canvas,
         game_map: &GameMap,
         selection_handler: Option<&SelectionHandler>,
     ) -> GameResult<()> {
@@ -180,19 +196,24 @@ impl Renderer {
             color,
         )?;
 
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+        canvas.draw(&mesh, graphics::DrawParam::default());
 
         // Draw vertices if selected
         if is_selected {
-            self.draw_polygon_vertices(ctx, &game_map.end_area)?;
+            self.draw_polygon_vertices(ctx, canvas, &game_map.end_area)?;
         }
 
         Ok(())
     }
 
-    fn draw_polygon_vertices(&self, ctx: &mut Context, polygon: &Polygon) -> GameResult {
+    fn draw_polygon_vertices(
+        &self,
+        ctx: &mut Context,
+        canvas: &mut Canvas,
+        polygon: &Polygon,
+    ) -> GameResult {
         for vertex in &polygon.verts {
-            self.draw_polygon_vertex(ctx, vertex, false)?;
+            self.draw_polygon_vertex(ctx, canvas, vertex, false)?;
         }
 
         // Draw pseudovertices on all edges
@@ -200,7 +221,7 @@ impl Renderer {
             let avg_x = (start_point.x + end_point.x) / 2.0;
             let avg_y = (start_point.y + end_point.y) / 2.0;
             let middle_point = Point2::new(avg_x, avg_y);
-            self.draw_polygon_vertex(ctx, &middle_point, true)?;
+            self.draw_polygon_vertex(ctx, canvas, &middle_point, true)?;
         }
 
         Ok(())
@@ -209,6 +230,7 @@ impl Renderer {
     fn draw_polygon_vertex(
         &self,
         ctx: &mut Context,
+        canvas: &mut Canvas,
         vertex: &Point2<f32>,
         pseudovertex: bool,
     ) -> GameResult {
@@ -220,17 +242,20 @@ impl Renderer {
 
         let mesh = Mesh::new_circle(ctx, graphics::DrawMode::fill(), *vertex, 5.0, 0.01, color)?;
 
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+        canvas.draw(&mesh, graphics::DrawParam::default());
+
+        Ok(())
     }
 
     fn draw_actors(
         &self,
         ctx: &mut Context,
+        canvas: &mut Canvas,
         actors: &[Actor],
         selection_handler: Option<&SelectionHandler>,
     ) -> GameResult<()> {
         for (index, actor) in actors.iter().enumerate() {
-            self.draw_actor(ctx, index, actor, selection_handler)?;
+            self.draw_actor(ctx, canvas, index, actor, selection_handler)?;
         }
 
         Ok(())
@@ -239,6 +264,7 @@ impl Renderer {
     fn draw_actor(
         &self,
         ctx: &mut Context,
+        canvas: &mut Canvas,
         index: usize,
         actor: &Actor,
         selection_handler: Option<&SelectionHandler>,
@@ -253,12 +279,18 @@ impl Renderer {
         let mut color = graphics::Color::WHITE;
 
         if let Controller::Guard(guard) = &actor.controller {
-            self.draw_discovery_bar(ctx, actor.discovered_player, &actor.pos, actor.radius)?;
+            self.draw_discovery_bar(
+                ctx,
+                canvas,
+                actor.discovered_player,
+                &actor.pos,
+                actor.radius,
+            )?;
             color = GUARD;
 
             if is_selected {
-                self.draw_guard_patrol_path(ctx, &guard.points.verts)?;
-                self.draw_polygon_vertices(ctx, &guard.points)?;
+                self.draw_guard_patrol_path(ctx, canvas, &guard.points.verts)?;
+                self.draw_polygon_vertices(ctx, canvas, &guard.points)?;
                 color = GUARD_SELECTED;
             }
         }
@@ -272,12 +304,15 @@ impl Renderer {
             color,
         )?;
 
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+        canvas.draw(&mesh, graphics::DrawParam::default());
+
+        Ok(())
     }
 
     fn draw_discovery_bar(
         &self,
         ctx: &mut Context,
+        canvas: &mut Canvas,
         discovered_player: f32,
         pos: &Point2<f32>,
         radius: f32,
@@ -294,11 +329,20 @@ impl Renderer {
             Color::from_rgb(100, 100, 255),
         )?;
 
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())
+        canvas.draw(&mesh, graphics::DrawParam::default());
+
+        Ok(())
     }
 
-    fn draw_guard_patrol_path(&self, ctx: &mut Context, points: &[Point2<f32>]) -> GameResult {
+    fn draw_guard_patrol_path(
+        &self,
+        ctx: &mut Context,
+        canvas: &mut Canvas,
+        points: &[Point2<f32>],
+    ) -> GameResult {
         let mesh = Mesh::new_polygon(ctx, DrawMode::stroke(2.0), points, graphics::Color::WHITE)?;
-        draw(ctx, &mesh, DrawParam::default())
+        canvas.draw(&mesh, DrawParam::default());
+
+        Ok(())
     }
 }

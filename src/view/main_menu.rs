@@ -4,27 +4,33 @@ use crate::{
     state::Input,
 };
 use ggez::{
-    event::KeyCode,
-    graphics::{self, Rect},
+    graphics::{Canvas, Rect},
+    input::keyboard::KeyCode,
     Context, GameResult,
 };
 
 pub struct MainMenuView {
-    ui_layer: UiLayer<ViewEvent>,
+    ui_layer: Option<UiLayer<ViewEvent>>,
 }
 
 impl MainMenuView {
-    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+    pub fn new(_ctx: &mut Context) -> GameResult<Self> {
+        Ok(MainMenuView { ui_layer: None })
+    }
+
+    fn init_ui(&mut self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult {
         let mut ui_layer = UiLayer::new();
 
-        let screen_coords = graphics::screen_coordinates(ctx);
+        let screen_coords = canvas.screen_coordinates().unwrap();
 
         ui_layer.add(title_label(ctx, screen_coords)?);
         ui_layer.add(start_button(ctx, screen_coords)?);
         ui_layer.add(editor_button(ctx, screen_coords)?);
         ui_layer.add(quit_button(ctx, screen_coords)?);
 
-        Ok(MainMenuView { ui_layer })
+        self.ui_layer = Some(ui_layer);
+
+        Ok(())
     }
 }
 
@@ -33,22 +39,31 @@ impl View for MainMenuView {
         Vec::new()
     }
 
-    fn draw(&self, ctx: &mut Context) -> GameResult<()> {
-        self.ui_layer.draw(ctx)
+    fn draw(&mut self, ctx: &mut Context, canvas: &mut Canvas) -> GameResult<()> {
+        if self.ui_layer.is_none() {
+            self.init_ui(ctx, canvas)?;
+        }
+
+        self.ui_layer.as_ref().unwrap().draw(ctx, canvas)
     }
 
     fn receive_input(&mut self, ctx: &mut Context, input: Input) -> Vec<ViewEvent> {
         let mut events = Vec::new();
 
-        match input {
-            Input::MouseDown { button, x, y } => {
-                events.extend(self.ui_layer.mouse_press(ctx, button, x, y))
+        match &mut self.ui_layer {
+            Some(ui_layer) => {
+                match input {
+                    Input::MouseDown { button, x, y } => {
+                        events.extend(ui_layer.mouse_press(ctx, button, x, y))
+                    }
+                    Input::KeyDown {
+                        key_code: KeyCode::Escape,
+                    } => events.push(ViewEvent::PopView),
+                    _ => {}
+                };
             }
-            Input::KeyDown {
-                key_code: KeyCode::Escape,
-            } => events.push(ViewEvent::PopView),
-            _ => {}
-        };
+            None => {}
+        }
 
         events
     }
